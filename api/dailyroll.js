@@ -137,6 +137,21 @@ export default async function handler(req, res) {
   const username = context.message?.user?.display_name || context.message?.user?.login || 'Unknown';
   const userId = context.message?.user?.provider_id;
   const isLive = context.channel?.is_live || false;
+  const streamTimestamp = context.channel?.stream_timestamp;
+  
+  // TEMPORARY LOGGING - Remove after understanding stream_timestamp
+  console.log('=== DEBUG INFO ===');
+  console.log('Current time:', new Date().toISOString());
+  console.log('Stream timestamp:', streamTimestamp);
+  console.log('Is live:', isLive);
+  console.log('Channel:', context.channel?.display_name);
+  if (streamTimestamp) {
+    const streamTime = new Date(streamTimestamp).getTime();
+    const now = Date.now();
+    const diffMinutes = Math.round((now - streamTime) / 1000 / 60);
+    console.log('Time since stream_timestamp:', diffMinutes, 'minutes');
+  }
+  console.log('==================');
   
   if (!userId) {
     res.status(400).send('Could not identify user');
