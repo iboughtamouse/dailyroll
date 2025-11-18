@@ -17,7 +17,7 @@ const HEROES = [
 // Insults for users who try to roll too early
 const INSULTS = [
   "nice double roll JACKASS",
-  "bro thinks he can roll twice lmao",
+  "bro thinks they can roll twice lmao",
   "greedy much? come back later",
   "did you think I wouldn't notice? 🤨",
   "one roll per day, genius",
@@ -25,7 +25,16 @@ const INSULTS = [
   "imagine being this desperate for RNG",
   "the audacity",
   "no. just no.",
-  "someone didn't read the rules smh"
+  "someone didn't read the rules smh",
+  "bro really thought 💀",
+  "not you trying to cheat the system",
+  "the greed is astronomical",
+  "erm what the sigma? (you can't roll twice)",
+  "chat is this real? 🤨📸",
+  "least greedy twitch chatter",
+  "my brother in christ it hasn't been 14 hours",
+  "you're done, you're done 🫵",
+  "reported to the cyber police"
 ];
 
 // Cooldown duration: 14 hours in milliseconds
@@ -140,16 +149,33 @@ export default async function handler(req, res) {
   // Check if user has rolled before
   const now = Date.now();
   const userRollKey = `dailyroll:${userId}`;
+  const spamKey = `dailyroll:spam:${userId}`;
   const userRoll = await redis.get(userRollKey);
   
   if (userRoll) {
     const timeSinceLastRoll = now - userRoll.lastRoll;
     
-    // If within cooldown period, send insult
+    // If within cooldown period, track spam and send insult
     if (timeSinceLastRoll < COOLDOWN_MS) {
-      const hoursLeft = Math.ceil((COOLDOWN_MS - timeSinceLastRoll) / (1000 * 60 * 60));
+      // Get current spam count
+      const spamCount = await redis.get(spamKey) || 0;
+      const newSpamCount = parseInt(spamCount) + 1;
+      
+      // Update spam count with 15-hour expiration
+      await redis.set(spamKey, newSpamCount, {
+        ex: Math.ceil((COOLDOWN_MS + 3600000) / 1000)
+      });
+      
+      // If they've tried 3+ times, timeout for 60 seconds
+      if (newSpamCount >= 3) {
+        const insult = getRandomInsult();
+        res.status(200).send(`/timeout ${username} 60s ${insult}`);
+        return;
+      }
+      
+      // Otherwise just send regular insult
       const insult = getRandomInsult();
-      res.status(200).send(`${insult} (${hoursLeft}h cooldown remaining)`);
+      res.status(200).send(insult);
       return;
     }
   }
@@ -168,6 +194,9 @@ export default async function handler(req, res) {
   }, {
     ex: Math.ceil((COOLDOWN_MS + 3600000) / 1000) // 14 hours + 1 hour buffer
   });
+  
+  // Clear spam counter on successful roll
+  await redis.del(spamKey);
   
   // Format and return response
   const response = formatRollResponse(username, iq, height, hero);
