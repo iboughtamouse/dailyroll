@@ -2,90 +2,17 @@
 // Returns random IQ, height, and hero with per-stream cooldown (when live) or 24-hour cooldown (when offline)
 
 import { Redis } from '@upstash/redis';
+import { getStreamStartTime } from './lib/twitch.js';
+import { 
+  generateIQ, 
+  generateHeight, 
+  generateHero, 
+  getRandomInsult, 
+  formatRollResponse 
+} from './lib/game.js';
 
-// Overwatch 2 hero roster (as of Season 19)
-const HEROES = [
-  "Ana", "Ashe", "Baptiste", "Bastion", "Brigitte", "Cassidy", "D.Va", 
-  "Doomfist", "Echo", "Genji", "Hanzo", "Hazard", "Illari", "Junker Queen",
-  "Junkrat", "Juno", "Kiriko", "Lifeweaver", "Lúcio", "Mauga", "Mei",
-  "Mercy", "Moira", "Orisa", "Pharah", "Ramattra", "Reaper", "Reinhardt",
-  "Roadhog", "Sigma", "Sojourn", "Soldier: 76", "Sombra", "Symmetra",
-  "Torbjörn", "Tracer", "Venture", "Widowmaker", "Winston", "Wrecking Ball",
-  "Zarya", "Zenyatta"
-];
-
-// Insults for users who try to roll too early
-const INSULTS = [
-  "nice double roll JACKASS",
-  "bro thinks they can roll twice lmao",
-  "greedy much? come back later",
-  "did you think I wouldn't notice? 🤨",
-  "one roll per day, genius",
-  "patience is a virtue you clearly lack",
-  "imagine being this desperate for RNG",
-  "the audacity",
-  "no. just no.",
-  "someone didn't read the rules smh",
-  "bro really thought 💀",
-  "not you trying to cheat the system",
-  "the greed is astronomical",
-  "erm what the sigma? (you can't roll twice)",
-  "chat is this real? 🤨📸",
-  "least greedy twitch chatter",
-  "my brother in christ it hasn't been 14 hours",
-  "you're done, you're done 🫵",
-  "reported to the cyber police"
-];
-
-// Cooldown duration: 14 hours in milliseconds (legacy, kept for expiration buffer)
-const COOLDOWN_MS = 14 * 60 * 60 * 1000;
+// Redis expiration for user data
 const REDIS_EXPIRATION = 48 * 60 * 60; // 48 hours in seconds
-
-/**
- * Generate random IQ between 0-200
- */
-function generateIQ() {
-  return Math.floor(Math.random() * 201);
-}
-
-/**
- * Generate random height in feet'inches format (0-9 feet, 0-11 inches)
- */
-function generateHeight() {
-  const feet = Math.floor(Math.random() * 10);
-  const inches = Math.floor(Math.random() * 12);
-  return `${feet}'${inches}"`;
-}
-
-/**
- * Pick random hero from roster
- */
-function generateHero() {
-  return HEROES[Math.floor(Math.random() * HEROES.length)];
-}
-
-/**
- * Pick random insult
- */
-function getRandomInsult() {
-  return INSULTS[Math.floor(Math.random() * INSULTS.length)];
-}
-
-/**
- * Format the daily roll response with fun styling
- */
-function formatRollResponse(username, iq, height, hero) {
-  // Multiple response format variations for variety
-  const formats = [
-    `${username}'s Daily Roll: IQ ${iq} | Height ${height} | Hero: ${hero}`,
-    `🎲 ${username} rolled: ${iq} IQ, ${height} tall, destined for ${hero}`,
-    `Daily Stats for ${username}: IQ ${iq} • ${height} • Should play ${hero}`,
-    `${username}: IQ=${iq} | Height=${height} | Today's hero: ${hero}`,
-    `[${username}] IQ: ${iq} | ${height} | Hero Roll: ${hero} 🎯`
-  ];
-  
-  return formats[Math.floor(Math.random() * formats.length)];
-}
 
 /**
  * Validate the Fossabot request and get context
@@ -137,16 +64,35 @@ export default async function handler(req, res) {
   // Extract user info
   const username = context.message?.user?.display_name || context.message?.user?.login || 'Unknown';
   const userId = context.message?.user?.provider_id;
+  const channelProviderId = context.channel?.provider_id;
   const isLive = context.channel?.is_live || false;
-  const streamTimestamp = context.channel?.stream_timestamp;
   
   if (!userId) {
     res.status(400).send('Could not identify user');
     return;
   }
   
+  if (!channelProviderId) {
+    res.status(400).send('Could not identify channel');
+    return;
+  }
+  
   // Initialize Redis client
   const redis = Redis.fromEnv();
+  
+  // Get actual stream start time from Twitch API if live
+  let streamStartTime = null;
+  if (isLive) {
+    try {
+      const startedAt = await getStreamStartTime(redis, channelProviderId);
+      if (startedAt) {
+        streamStartTime = new Date(startedAt).getTime();
+      }
+    } catch (error) {
+      console.error('Error fetching stream start time:', error);
+      // Continue without stream start time - will fall back to 24-hour cooldown
+    }
+  }
   
   // Check if user has rolled before
   const now = Date.now();
@@ -158,12 +104,11 @@ export default async function handler(req, res) {
   console.log('User:', username);
   console.log('Current time:', new Date(now).toISOString());
   console.log('Is live:', isLive);
-  console.log('Stream timestamp:', streamTimestamp);
+  console.log('Stream start time:', streamStartTime ? new Date(streamStartTime).toISOString() : 'N/A');
   
-  if (streamTimestamp) {
-    const streamStartTime = new Date(streamTimestamp).getTime();
+  if (streamStartTime) {
     const minutesSinceStreamStart = Math.round((now - streamStartTime) / 1000 / 60);
-    console.log('Minutes since stream_timestamp:', minutesSinceStreamStart);
+    console.log('Minutes since stream start:', minutesSinceStreamStart);
   }
   
   if (userData && userData.lastRoll) {
@@ -180,15 +125,14 @@ export default async function handler(req, res) {
   let cooldownReason = '';
   
   if (userData && userData.lastRoll) {
-    if (isLive && streamTimestamp) {
+    if (isLive && streamStartTime) {
       // LIVE: Check if they rolled during current stream
-      const streamStartTime = new Date(streamTimestamp).getTime();
       inCooldown = userData.lastRoll > streamStartTime;
       cooldownReason = inCooldown 
-        ? `Rolled during current stream (${new Date(userData.lastRoll).toISOString()} > ${streamTimestamp})`
+        ? `Rolled during current stream (${new Date(userData.lastRoll).toISOString()} > ${new Date(streamStartTime).toISOString()})`
         : `Last roll was before this stream started`;
     } else {
-      // OFFLINE: Use 24-hour cooldown
+      // OFFLINE or couldn't get stream start time: Use 24-hour cooldown
       const OFFLINE_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
       const timeSinceLastRoll = now - userData.lastRoll;
       inCooldown = timeSinceLastRoll < OFFLINE_COOLDOWN_MS;

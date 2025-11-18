@@ -1,11 +1,15 @@
 # Daily Roll API
 
-A serverless API for Twitch chat that generates random "daily roll" stats with a 14-hour cooldown per user.
+A serverless API for Twitch chat that generates random "daily roll" stats with smart cooldowns.
 
 ## Features
 
 - **Random Stats**: Generates IQ (0-200), Height (0'0"-9'11"), and Overwatch 2 Hero
-- **Cooldown System**: 14-hour cooldown per user with funny insult responses
+- **Smart Cooldown System**: 
+  - When stream is **LIVE**: One roll per stream session
+  - When stream is **OFFLINE**: 24-hour cooldown
+  - Spam protection with escalating timeouts
+- **Twitch API Integration**: Accurately detects stream start time for per-stream cooldowns
 - **Fossabot Integration**: Validates requests and extracts user information
 - **Persistent Storage**: Uses Upstash Redis for reliable cooldown tracking
 - **Multiple Formats**: Randomized response styles for variety
@@ -24,6 +28,7 @@ Daily Stats for TestUser: IQ 156 • 7'2" • Should play Reinhardt
 
 1. **Vercel Account** - Sign up at https://vercel.com
 2. **Upstash Redis** - Create a free database at https://upstash.com
+3. **Twitch Developer App** - Create at https://dev.twitch.tv/console/apps
 
 ### Setup Steps
 
@@ -42,7 +47,21 @@ cd dailyroll-api
    - `UPSTASH_REDIS_REST_URL`
    - `UPSTASH_REDIS_REST_TOKEN`
 
-#### 3. Deploy to Vercel
+#### 3. Create Twitch Developer App
+
+1. Go to https://dev.twitch.tv/console/apps
+2. Click "Register Your Application"
+3. Fill in:
+   - **Name**: `DailyRoll Bot` (or any name you prefer)
+   - **OAuth Redirect URLs**: `http://localhost`
+   - **Category**: `Chat Bot`
+4. Click "Create"
+5. Click "Manage" on your new application
+6. Copy your credentials:
+   - `TWITCH_CLIENT_ID` (visible)
+   - `TWITCH_CLIENT_SECRET` (click "New Secret" to generate)
+
+#### 4. Deploy to Vercel
 
 ##### Option A: Using Vercel Dashboard
 
@@ -51,6 +70,8 @@ cd dailyroll-api
 3. Add environment variables:
    - `UPSTASH_REDIS_REST_URL` = your Upstash URL
    - `UPSTASH_REDIS_REST_TOKEN` = your Upstash token
+   - `TWITCH_CLIENT_ID` = your Twitch Client ID
+   - `TWITCH_CLIENT_SECRET` = your Twitch Client Secret
 4. Click "Deploy"
 
 ##### Option B: Using Vercel CLI
@@ -61,7 +82,7 @@ vercel
 # Follow prompts and add environment variables when asked
 ```
 
-#### 4. Configure Fossabot
+#### 5. Configure Fossabot
 
 1. Go to https://fossabot.com
 2. Navigate to: Commands → Custom Commands → New Command
@@ -71,20 +92,29 @@ vercel
 
 ## Configuration
 
-### Cooldown Duration
+### Cooldown Behavior
 
-Edit `COOLDOWN_MS` in `api/dailyroll.js`:
+The API uses different cooldown strategies depending on stream status:
+
+- **When LIVE**: Users can roll once per stream. The cooldown resets when a new stream starts.
+- **When OFFLINE**: Users can roll once per 24 hours.
+
+This behavior is handled automatically by querying the Twitch API for stream status.
+
+### Modify Cooldown Duration
+
+To change the offline cooldown duration, edit `api/dailyroll.js`:
 
 ```javascript
-const COOLDOWN_MS = 14 * 60 * 60 * 1000; // 14 hours
+const OFFLINE_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
 ```
 
 ### Add More Insults
 
-Edit the `INSULTS` array in `api/dailyroll.js`:
+Edit the `INSULTS` array in `api/lib/game.js`:
 
 ```javascript
-const INSULTS = [
+export const INSULTS = [
   "nice double roll JACKASS",
   "your custom insult here",
   // ... more insults
@@ -93,7 +123,15 @@ const INSULTS = [
 
 ### Update Hero Roster
 
-Edit the `HEROES` array in `api/dailyroll.js` to add/remove heroes.
+Edit the `HEROES` array in `api/lib/game.js` to add/remove heroes.
+
+### Adjust Cache Duration
+
+Stream start times are cached for 5 minutes to reduce Twitch API calls. To adjust this, edit `api/lib/twitch.js`:
+
+```javascript
+const FIVE_MINUTES_SECONDS = 5 * 60; // Change this value
+```
 
 ## Environment Variables
 
@@ -103,21 +141,30 @@ Required environment variables in Vercel:
 |----------|-------------|---------|
 | `UPSTASH_REDIS_REST_URL` | Your Upstash Redis REST URL | `https://xyz.upstash.io` |
 | `UPSTASH_REDIS_REST_TOKEN` | Your Upstash Redis REST token | `AXXXxxxXXX...` |
+| `TWITCH_CLIENT_ID` | Your Twitch application Client ID | `abc123xyz...` |
+| `TWITCH_CLIENT_SECRET` | Your Twitch application Client Secret | `secret123...` |
 
 ## How It Works
 
 1. User types `!dailyroll` in Twitch chat
 2. Fossabot calls your API endpoint with validation token
-3. API validates request with Fossabot
-4. API checks Redis for user's last roll timestamp
-5. If within cooldown → return insult with time remaining
-6. If cooldown expired → generate new roll and store in Redis
-7. Return formatted response to chat
+3. API validates request with Fossabot to get user and channel info
+4. If stream is live, API calls Twitch API to get actual stream start time (cached for 5 minutes)
+5. API checks Redis for user's last roll timestamp
+6. **If stream is LIVE**:
+   - If user already rolled during this stream → return insult
+   - If user's last roll was before stream started → generate new roll
+7. **If stream is OFFLINE**:
+   - If within 24 hours of last roll → return insult
+   - If 24+ hours since last roll → generate new roll
+8. Spam protection: If user tries 2+ times during cooldown, timeout for 60 seconds
+9. Return formatted response to chat
 
 ## Tech Stack
 
 - **Vercel** - Serverless hosting
 - **Upstash Redis** - Persistent key-value storage
+- **Twitch API** - Stream status and metadata
 - **Fossabot** - Twitch bot integration
 - **Node.js** - Runtime
 
@@ -148,10 +195,17 @@ You cannot test this API directly in a browser because it requires Fossabot head
 ### Cooldown not working
 - Verify environment variables are set correctly in Vercel
 - Check Upstash Redis dashboard to confirm database is active
+- For live streams: Verify Twitch Client ID and Secret are correct
+- Check Vercel logs for any Twitch API errors
 
 ### Connection errors
 - Ensure your Upstash Redis database is in the free tier and not paused
 - Verify your REST credentials are correct
+
+### "Error fetching stream start time"
+- Verify your Twitch Client ID and Secret are valid
+- Check that your Twitch app hasn't been deleted or suspended
+- This error won't break the bot - it will fall back to 24-hour cooldown
 
 ## License
 
@@ -163,9 +217,9 @@ Pull requests welcome! Feel free to add features, fix bugs, or improve documenta
 
 ## Possible Enhancements
 
-- [ ] Stream-based cooldown resets (reset when stream goes live)
 - [ ] Leaderboards (highest IQ, tallest height, etc.)
 - [ ] Special weekend bonuses
 - [ ] Per-hero custom response messages
 - [ ] Stats tracking and analytics
 - [ ] Role-based special rolls (subs, mods)
+- [ ] Multi-language support
