@@ -166,8 +166,8 @@ export default async function handler(req, res) {
         ex: Math.ceil((COOLDOWN_MS + 3600000) / 1000)
       });
       
-      // If they've tried 3+ times, timeout for 60 seconds
-      if (newSpamCount >= 3) {
+      // If they've tried 2+ times, timeout for 60 seconds
+      if (newSpamCount >= 2) {
         const insult = getRandomInsult();
         res.status(200).send(`/timeout ${username} 60s ${insult}`);
         return;
