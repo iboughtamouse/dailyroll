@@ -1,5 +1,5 @@
 // Daily Roll API for Fossabot (Redis Version)
-// Returns random IQ, height, and hero with 14-hour cooldown per user
+// Returns random IQ, height, and hero with per-stream cooldown (when live) or 24-hour cooldown (when offline)
 
 import { Redis } from '@upstash/redis';
 
@@ -37,8 +37,9 @@ const INSULTS = [
   "reported to the cyber police"
 ];
 
-// Cooldown duration: 14 hours in milliseconds
+// Cooldown duration: 14 hours in milliseconds (legacy, kept for expiration buffer)
 const COOLDOWN_MS = 14 * 60 * 60 * 1000;
+const REDIS_EXPIRATION = 48 * 60 * 60; // 48 hours in seconds
 
 /**
  * Generate random IQ between 0-200
@@ -139,20 +140,6 @@ export default async function handler(req, res) {
   const isLive = context.channel?.is_live || false;
   const streamTimestamp = context.channel?.stream_timestamp;
   
-  // TEMPORARY LOGGING - Remove after understanding stream_timestamp
-  console.log('=== DEBUG INFO ===');
-  console.log('Current time:', new Date().toISOString());
-  console.log('Stream timestamp:', streamTimestamp);
-  console.log('Is live:', isLive);
-  console.log('Channel:', context.channel?.display_name);
-  if (streamTimestamp) {
-    const streamTime = new Date(streamTimestamp).getTime();
-    const now = Date.now();
-    const diffMinutes = Math.round((now - streamTime) / 1000 / 60);
-    console.log('Time since stream_timestamp:', diffMinutes, 'minutes');
-  }
-  console.log('==================');
-  
   if (!userId) {
     res.status(400).send('Could not identify user');
     return;
@@ -166,34 +153,82 @@ export default async function handler(req, res) {
   const userRollKey = `dailyroll:${userId}`;
   const userData = await redis.get(userRollKey);
   
+  // Log current state for monitoring
+  console.log('=== DAILYROLL REQUEST ===');
+  console.log('User:', username);
+  console.log('Current time:', new Date(now).toISOString());
+  console.log('Is live:', isLive);
+  console.log('Stream timestamp:', streamTimestamp);
+  
+  if (streamTimestamp) {
+    const streamStartTime = new Date(streamTimestamp).getTime();
+    const minutesSinceStreamStart = Math.round((now - streamStartTime) / 1000 / 60);
+    console.log('Minutes since stream_timestamp:', minutesSinceStreamStart);
+  }
+  
   if (userData && userData.lastRoll) {
-    const timeSinceLastRoll = now - userData.lastRoll;
+    console.log('Last roll:', new Date(userData.lastRoll).toISOString());
+    const minutesSinceLastRoll = Math.round((now - userData.lastRoll) / 1000 / 60);
+    console.log('Minutes since last roll:', minutesSinceLastRoll);
+    console.log('Current spam count:', userData.spamCount || 0);
+  } else {
+    console.log('No previous roll data');
+  }
+  
+  // Determine if user is in cooldown
+  let inCooldown = false;
+  let cooldownReason = '';
+  
+  if (userData && userData.lastRoll) {
+    if (isLive && streamTimestamp) {
+      // LIVE: Check if they rolled during current stream
+      const streamStartTime = new Date(streamTimestamp).getTime();
+      inCooldown = userData.lastRoll > streamStartTime;
+      cooldownReason = inCooldown 
+        ? `Rolled during current stream (${new Date(userData.lastRoll).toISOString()} > ${streamTimestamp})`
+        : `Last roll was before this stream started`;
+    } else {
+      // OFFLINE: Use 24-hour cooldown
+      const OFFLINE_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
+      const timeSinceLastRoll = now - userData.lastRoll;
+      inCooldown = timeSinceLastRoll < OFFLINE_COOLDOWN_MS;
+      cooldownReason = inCooldown
+        ? `Within 24-hour offline cooldown (${Math.round(timeSinceLastRoll / 1000 / 60)} minutes ago)`
+        : `24-hour cooldown expired`;
+    }
+  }
+  
+  console.log('In cooldown:', inCooldown);
+  console.log('Reason:', cooldownReason);
+  console.log('========================');
+  
+  if (inCooldown) {
+    // User is in cooldown - track spam
+    const spamCount = (userData.spamCount || 0) + 1;
     
-    // If within cooldown period, track spam and send insult
-    if (timeSinceLastRoll < COOLDOWN_MS) {
-      // Increment spam count
-      const spamCount = (userData.spamCount || 0) + 1;
-      
-      // Update user data with incremented spam count
-      await redis.set(userRollKey, {
-        lastRoll: userData.lastRoll,  // Keep existing timestamp
-        spamCount: spamCount
-      }, {
-        ex: Math.ceil((COOLDOWN_MS + 3600000) / 1000) // 14 hours + 1 hour buffer
-      });
-      
-      // If they've tried 2+ times, timeout for 60 seconds
-      if (spamCount >= 2) {
-        const insult = getRandomInsult();
-        res.status(200).send(`/timeout ${username} 60s ${insult}`);
-        return;
-      }
-      
-      // Otherwise just send regular insult
+    console.log('❌ Cooldown active - spam count:', spamCount);
+    
+    // Update user data with incremented spam count
+    await redis.set(userRollKey, {
+      lastRoll: userData.lastRoll,  // Keep existing timestamp
+      spamCount: spamCount
+    }, {
+      ex: REDIS_EXPIRATION
+    });
+    
+    // If they've tried 2+ times, timeout for 60 seconds
+    if (spamCount >= 2) {
+      console.log('⏱️ Timeout triggered (spam count >= 2)');
       const insult = getRandomInsult();
-      res.status(200).send(insult);
+      res.status(200).send(`/timeout ${username} 60s ${insult}`);
       return;
     }
+    
+    // Otherwise just send regular insult
+    console.log('💬 Sending insult (spam count < 2)');
+    const insult = getRandomInsult();
+    res.status(200).send(insult);
+    return;
   }
   
   // Generate new roll
@@ -201,12 +236,14 @@ export default async function handler(req, res) {
   const height = generateHeight();
   const hero = generateHero();
   
-  // Store timestamp and reset spam count with 15-hour expiration
+  console.log('✅ Successful roll - generating new stats');
+  
+  // Store timestamp and reset spam count with 48-hour expiration
   await redis.set(userRollKey, {
     lastRoll: now,
     spamCount: 0
   }, {
-    ex: Math.ceil((COOLDOWN_MS + 3600000) / 1000) // 14 hours + 1 hour buffer
+    ex: REDIS_EXPIRATION
   });
   
   // Format and return response
