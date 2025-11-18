@@ -1,0 +1,18 @@
+{
+  "name": "dailyroll-api",
+  "version": "1.0.0",
+  "description": "Twitch chat command that generates random daily stats with cooldown",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.28.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "",
+  "license": "MIT"
+}
