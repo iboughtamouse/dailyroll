@@ -149,25 +149,26 @@ export default async function handler(req, res) {
   // Check if user has rolled before
   const now = Date.now();
   const userRollKey = `dailyroll:${userId}`;
-  const spamKey = `dailyroll:spam:${userId}`;
-  const userRoll = await redis.get(userRollKey);
+  const userData = await redis.get(userRollKey);
   
-  if (userRoll) {
-    const timeSinceLastRoll = now - userRoll.lastRoll;
+  if (userData && userData.lastRoll) {
+    const timeSinceLastRoll = now - userData.lastRoll;
     
     // If within cooldown period, track spam and send insult
     if (timeSinceLastRoll < COOLDOWN_MS) {
-      // Get current spam count
-      const spamCount = await redis.get(spamKey) || 0;
-      const newSpamCount = parseInt(spamCount) + 1;
+      // Increment spam count
+      const spamCount = (userData.spamCount || 0) + 1;
       
-      // Update spam count with 15-hour expiration
-      await redis.set(spamKey, newSpamCount, {
-        ex: Math.ceil((COOLDOWN_MS + 3600000) / 1000)
+      // Update user data with incremented spam count
+      await redis.set(userRollKey, {
+        lastRoll: userData.lastRoll,  // Keep existing timestamp
+        spamCount: spamCount
+      }, {
+        ex: Math.ceil((COOLDOWN_MS + 3600000) / 1000) // 14 hours + 1 hour buffer
       });
       
       // If they've tried 2+ times, timeout for 60 seconds
-      if (newSpamCount >= 2) {
+      if (spamCount >= 2) {
         const insult = getRandomInsult();
         res.status(200).send(`/timeout ${username} 60s ${insult}`);
         return;
@@ -185,18 +186,13 @@ export default async function handler(req, res) {
   const height = generateHeight();
   const hero = generateHero();
   
-  // Store in Redis with 15-hour expiration (slightly longer than cooldown for safety)
+  // Store timestamp and reset spam count with 15-hour expiration
   await redis.set(userRollKey, {
     lastRoll: now,
-    iq,
-    height,
-    hero
+    spamCount: 0
   }, {
     ex: Math.ceil((COOLDOWN_MS + 3600000) / 1000) // 14 hours + 1 hour buffer
   });
-  
-  // Clear spam counter on successful roll
-  await redis.del(spamKey);
   
   // Format and return response
   const response = formatRollResponse(username, iq, height, hero);
