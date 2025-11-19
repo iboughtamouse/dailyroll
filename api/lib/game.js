@@ -1,15 +1,69 @@
 // Game logic for Daily Roll
 // Contains hero roster, generators, formatters, and insults
 
-// Overwatch 2 hero roster (as of Season 19)
-export const HEROES = [
-  "Ana", "Ashe", "Baptiste", "Bastion", "Brigitte", "Cassidy", "D.Va", 
-  "Doomfist", "Echo", "Genji", "Hanzo", "Hazard", "Illari", "Junker Queen",
-  "Junkrat", "Juno", "Kiriko", "Lifeweaver", "Lúcio", "Mauga", "Mei",
-  "Mercy", "Moira", "Orisa", "Pharah", "Ramattra", "Reaper", "Reinhardt",
-  "Roadhog", "Sigma", "Sojourn", "Soldier: 76", "Sombra", "Symmetra",
-  "Torbjörn", "Tracer", "Venture", "Widowmaker", "Winston", "Wrecking Ball",
-  "Zarya", "Zenyatta"
+// Overwatch 2 hero roster organized by tiers
+// Bottom 15% - "Literally a pet" (simple, instinct-based gameplay)
+const TIER_HAMSTER = [
+  "Wrecking Ball",
+  "Bastion", 
+  "Winston",
+  "Torbjörn",
+  "Junkrat",
+  "Orisa",
+  "Brigitte",
+  "Hazard",
+];
+
+// 16-35% - "Unga bunga" (low skill floor, hit things hard)
+const TIER_UNGA = [
+  "Reinhardt",
+  "Roadhog",
+  "Doomfist",
+  "Junker Queen",
+  "Mauga",
+  "Reaper",
+  "Ramattra",
+  "Tracer",
+  "Sombra",
+  "Genji",
+];
+
+// 36-65% - "Functioning human" (average skill, normal gameplay)
+const TIER_NORMAL = [
+  "Soldier: 76",
+  "Cassidy",
+  "Ashe",
+  "Pharah",
+  "Lúcio",
+  "Mei",
+  "D.Va",
+  "Moira",
+  "Symmetra",
+  "Sojourn",
+  "Zarya",
+  "Lifeweaver",
+  "Venture",
+  "Juno",
+  "Hanzo",
+];
+
+// 66-85% - "Big brain" (high skill expression, tactical)
+const TIER_BIGBRAIN = [
+  "Ana",
+  "Baptiste",
+  "Sigma",
+  "Zenyatta",
+  "Illari",
+  "Echo",
+  "Wuyang"
+];
+
+// Top 15% - "Overqualified" (highest skill ceiling, wasted potential)
+const TIER_OVERQUALIFIED = [
+  "Mercy",
+  "Kiriko",
+  "Widowmaker",
+  "Freja"
 ];
 
 // Insults for users who try to roll too early
@@ -52,10 +106,44 @@ export function generateHeight() {
 }
 
 /**
- * Pick random hero from roster
+ * Calculate tier based on IQ and height
+ * Returns tier number (1-5) and the hero pool for that tier
  */
-export function generateHero() {
-  return HEROES[Math.floor(Math.random() * HEROES.length)];
+function calculateTier(iq, heightString) {
+  // Convert height string (e.g., "6'3"") to total inches
+  const [feet, inches] = heightString.replace('"', '').split("'").map(Number);
+  const totalInches = feet * 12 + inches;
+  
+  // Calculate combined score (0-1 range)
+  // IQ: 0-200, Height: 0-119 inches (9'11")
+  const iqScore = iq / 200;
+  const heightScore = totalInches / 119;
+  const combinedScore = (iqScore + heightScore) / 2;
+  
+  // Determine tier based on percentile
+  if (combinedScore < 0.15) {
+    return { tier: 1, pool: TIER_HAMSTER, name: "hamster" };
+  } else if (combinedScore < 0.35) {
+    return { tier: 2, pool: TIER_UNGA, name: "unga" };
+  } else if (combinedScore < 0.65) {
+    return { tier: 3, pool: TIER_NORMAL, name: "normal" };
+  } else if (combinedScore < 0.85) {
+    return { tier: 4, pool: TIER_BIGBRAIN, name: "bigbrain" };
+  } else {
+    return { tier: 5, pool: TIER_OVERQUALIFIED, name: "overqualified" };
+  }
+}
+
+/**
+ * Pick random hero from the appropriate tier
+ */
+export function generateHero(iq, height) {
+  const tierInfo = calculateTier(iq, height);
+  return {
+    hero: tierInfo.pool[Math.floor(Math.random() * tierInfo.pool.length)],
+    tier: tierInfo.tier,
+    tierName: tierInfo.name
+  };
 }
 
 /**
@@ -66,17 +154,59 @@ export function getRandomInsult() {
 }
 
 /**
- * Format the daily roll response with fun styling
+ * Format the daily roll response with tier-specific flavor text
  */
-export function formatRollResponse(username, iq, height, hero) {
-  // Multiple response format variations for variety
-  const formats = [
-    `${username}'s Daily Roll: IQ ${iq} | Height ${height} | Hero: ${hero}`,
-    `🎲 ${username} rolled: ${iq} IQ, ${height} tall, destined for ${hero}`,
-    `Daily Stats for ${username}: IQ ${iq} • ${height} • Should play ${hero}`,
-    `${username}: IQ=${iq} | Height=${height} | Today's hero: ${hero}`,
-    `[${username}] IQ: ${iq} | ${height} | Hero Roll: ${hero} 🎯`
+export function formatRollResponse(username, iq, height, heroData) {
+  const { hero, tier, tierName } = heroData;
+  
+  // Tier 1: "Literally a pet" 
+  const hamsterFormats = [
+    `${username} rolled ${iq} IQ and ${height} height - literal hamster brain. Play ${hero}.`,
+    `${username}: ${iq} IQ, ${height} tall. You are ${hero === "Torbjörn" ? "the turret" : "basically a pet"}. Play ${hero}.`,
+    `IQ ${iq}, Height ${height} - ${username} operates on pure instinct. ${hero} it is.`,
+    `${username} got ${iq} IQ and ${height}. Reject humanity, return to ${hero}.`
   ];
   
+  // Tier 2: "Unga bunga"
+  const ungaFormats = [
+    `${username} rolled ${iq} IQ, ${height} - unga bunga energy. Play ${hero}.`,
+    `${iq} IQ and ${height} for ${username}. Big weapon, simple plan. ${hero} awaits.`,
+    `${username}: ${iq} IQ, ${height} tall - you see enemy, you hit enemy. Play ${hero}. ${hero === "Reinhardt" ? " HONOR JUSTICE CHUNGUS FUCKING CHUNGUS!" : ""}`,
+    `IQ ${iq}, Height ${height} - ${username} thinks with their fists. Time for ${hero}.`
+  ];
+  
+  // Tier 3: "Functioning human"
+  const normalFormats = [
+    `${username} rolled ${iq} IQ and ${height} - you're fine. Play ${hero}.`,
+    `${username}: IQ ${iq}, ${height} tall. Perfectly average. ${hero} suits you.`,
+    `${iq} IQ, ${height} for ${username} - congrats on being unremarkable. Play ${hero}.`,
+    `${username} got ${iq} IQ and ${height}. Nothing special, play ${hero}.`
+  ];
+  
+  // Tier 4: "Big brain"
+  const bigbrainFormats = [
+    `${username} rolled ${iq} IQ, ${height} - actually has a plan. Play ${hero}.`,
+    `IQ ${iq} and ${height} for ${username}. High skill expression time: ${hero}.`,
+    `${username}: ${iq} IQ, ${height} tall - you've got a brain, use it. Play ${hero}.`,
+    `${iq} IQ, ${height} - ${username} thinks before shooting. ${hero} ready.`
+  ];
+  
+  // Tier 5: "Overqualified"
+  const overqualifiedFormats = [
+    `${username} rolled ${iq} IQ and ${height} - overqualified. Play ${hero} and carry these idiots.`,
+    `IQ ${iq}, Height ${height} - ${username} is wasting their time here. Play ${hero}.`,
+    `${username}: ${iq} IQ, ${height} tall. Why are you even here? Play ${hero}.`,
+    `${iq} IQ, ${height} for ${username} - too good for this. Like ${hero}. You devilish beast. You sly motherfucker.`
+  ];
+  
+  const formatsByTier = {
+    1: hamsterFormats,
+    2: ungaFormats,
+    3: normalFormats,
+    4: bigbrainFormats,
+    5: overqualifiedFormats
+  };
+  
+  const formats = formatsByTier[tier];
   return formats[Math.floor(Math.random() * formats.length)];
 }

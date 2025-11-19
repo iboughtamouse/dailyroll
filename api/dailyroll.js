@@ -178,9 +178,10 @@ export default async function handler(req, res) {
   // Generate new roll
   const iq = generateIQ();
   const height = generateHeight();
-  const hero = generateHero();
+  const heroData = generateHero(iq, height);
   
   console.log('✅ Successful roll - generating new stats');
+  console.log(`Generated: IQ ${iq}, Height ${height}, Hero ${heroData.hero} (Tier ${heroData.tier})`);
   
   // Store timestamp and reset spam count with 48-hour expiration
   await redis.set(userRollKey, {
@@ -191,6 +192,6 @@ export default async function handler(req, res) {
   });
   
   // Format and return response
-  const response = formatRollResponse(username, iq, height, hero);
+  const response = formatRollResponse(username, iq, height, heroData);
   res.status(200).send(response);
 }
