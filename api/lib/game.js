@@ -12,6 +12,8 @@ const TIER_HAMSTER = [
   "Orisa",
   "Brigitte",
   "Hazard",
+  "Tracer",
+  "Sombra",
 ];
 
 // 16-35% - "Unga bunga" (low skill floor, hit things hard)
@@ -23,8 +25,6 @@ const TIER_UNGA = [
   "Mauga",
   "Reaper",
   "Ramattra",
-  "Tracer",
-  "Sombra",
   "Genji",
 ];
 
