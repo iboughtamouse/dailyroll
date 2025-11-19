@@ -171,9 +171,9 @@ export function formatRollResponse(username, iq, height, heroData) {
   const ungaFormats = [
     `${username} rolled ${iq} IQ, ${height} - unga bunga energy. Play ${hero}.`,
     `${iq} IQ and ${height} for ${username}. Big weapon, simple plan. ${hero} awaits.`,
-    `${username}: ${iq} IQ, ${height} tall - you see enemy, you hit enemy. Play ${hero}. ${hero === "Reinhardt" ? " HONOR JUSTICE CHUNGUS FUCKING CHUNGUS!" : ""}`,
+    `${username}: ${iq} IQ, ${height} tall - you see enemy, you hit enemy. Play ${hero}.`,
     `IQ ${iq}, Height ${height} - ${username} thinks with their fists. Time for ${hero}.`
-  ];
+  ].map((response) => response + (hero === "Reinhardt" ? " HONOR!! JUSTICE!! CHUNGUS FUCKING CHUNGUS!" : ""));
   
   // Tier 3: "Functioning human"
   const normalFormats = [
