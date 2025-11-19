@@ -17,9 +17,9 @@ A serverless API for Twitch chat that generates random "daily roll" stats with s
 ## Example Output
 
 ```
-TestUser's Daily Roll: IQ 142 | Height 6'3" | Hero: Genji
-🎲 TestUser rolled: 89 IQ, 5'8" tall, destined for Mercy
-Daily Stats for TestUser: IQ 156 • 7'2" • Should play Reinhardt
+TestUser rolled 45 IQ and 2'4" height - literal hamster brain. Play Wrecking Ball.
+142 IQ and 6'3" for TestUser. Big weapon, simple plan. Reinhardt awaits. HONOR!! JUSTICE!! CHUNGUS FUCKING CHUNGUS!
+TestUser: 156 IQ, 7'2" tall - you've got a brain, use it. Play Widowmaker.
 ```
 
 ## Deployment
