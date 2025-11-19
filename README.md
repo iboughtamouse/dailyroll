@@ -1,6 +1,6 @@
 # Daily Roll API
 
-A serverless API for Twitch chat that generates random "daily roll" stats with smart cooldowns.
+A serverless API for Twitch chat that generates random "daily roll" stats with smart cooldowns. Originally made for twitch.tv/august
 
 ## Features
 
