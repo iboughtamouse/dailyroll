@@ -47,7 +47,7 @@ export default async function handler(req, res) {
   const token = req.headers['x-fossabot-customapitoken'];
   
   // Get twitch channel name
-  const isAugust = req.headers['x-fossabot-channeldisplayname']
+  const isAugust = `${req.headers['x-fossabot-channeldisplayname']}`.toUpperCase() === "AUGUST"
   console.log(`CHANNEL DISPLAY NAME: ${isAugust}`)
   
   if (!token) {
@@ -55,9 +55,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  // if (!isAugust) {
-  //   res.status(400).send('Get out of my fucking API you shitter')
-  // }
+  if (!isAugust) {
+    res.status(400).send('Get out of my fucking API you shitter')
+  }
   
   // Validate request and get context
   const validation = await validateAndGetContext(token);
