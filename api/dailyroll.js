@@ -164,13 +164,19 @@ export default async function handler(req, res) {
     if (spamCount >= 2) {
       console.log('⏱️ Timeout triggered (spam count >= 2)');
       const insult = getRandomInsult();
-      res.status(200).send(`/timeout ${username} 60s ${insult}`);
+      const timeoutMessage = `/timeout ${username} 60s ${insult}`;
+      console.log('📤 RESPONSE (TIMEOUT):', JSON.stringify(timeoutMessage));
+      console.log('📤 RESPONSE LENGTH:', timeoutMessage.length);
+      console.log('📤 RESPONSE BYTES:', Buffer.from(timeoutMessage).toString('hex'));
+      res.status(200).send(timeoutMessage);
       return;
     }
     
     // Otherwise just send regular insult
     console.log('💬 Sending insult (spam count < 2)');
     const insult = getRandomInsult();
+    console.log('📤 RESPONSE (INSULT):', JSON.stringify(insult));
+    console.log('📤 RESPONSE LENGTH:', insult.length);
     res.status(200).send(insult);
     return;
   }
@@ -193,5 +199,7 @@ export default async function handler(req, res) {
   
   // Format and return response
   const response = formatRollResponse(username, iq, height, heroData);
+  console.log('📤 RESPONSE (SUCCESS):', JSON.stringify(response));
+  console.log('📤 RESPONSE LENGTH:', response.length);
   res.status(200).send(response);
 }
