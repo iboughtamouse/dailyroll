@@ -183,8 +183,10 @@ export default async function handler(req, res) {
   });
   
   // Format and return response
-  const response = formatRollResponse(username, iq, height, heroData);
-  if (isIvy) response = response + ` AND @uwuivy is a fucking fed ReallyMad`
+  let response = formatRollResponse(username, iq, height, heroData);
+  if (isIvy) {
+    response = response + ` AND @uwuivy is a fucking fed ReallyMad`
+  }
   console.log('📤 RESPONSE (SUCCESS):', JSON.stringify(response));
   console.log('📤 RESPONSE LENGTH:', response.length);
   res.status(200).send(response);
