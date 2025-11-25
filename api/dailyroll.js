@@ -147,36 +147,8 @@ export default async function handler(req, res) {
   console.log('========================');
   
   if (inCooldown) {
-    // User is in cooldown - track spam
-    const spamCount = (userData.spamCount || 0) + 1;
-    
-    console.log('❌ Cooldown active - spam count:', spamCount);
-    
-    // Update user data with incremented spam count
-    await redis.set(userRollKey, {
-      lastRoll: userData.lastRoll,  // Keep existing timestamp
-      spamCount: spamCount
-    }, {
-      ex: REDIS_EXPIRATION
-    });
-    
-    // If they've tried 2+ times, timeout for 60 seconds
-    if (spamCount >= 2) {
-      console.log('⏱️ Timeout triggered (spam count >= 2)');
-      const insult = getRandomInsult();
-      // Allow configurable timeout prefix (default: "/")
-      const timeoutPrefix = process.env.TIMEOUT_PREFIX || '/';
-      const timeoutMessage = `${timeoutPrefix}timeout ${username} 60s ${insult}`;
-      console.log('📤 TIMEOUT PREFIX:', JSON.stringify(timeoutPrefix));
-      console.log('📤 RESPONSE (TIMEOUT):', JSON.stringify(timeoutMessage));
-      console.log('📤 RESPONSE LENGTH:', timeoutMessage.length);
-      console.log('📤 RESPONSE BYTES:', Buffer.from(timeoutMessage).toString('hex'));
-      res.status(200).send(timeoutMessage);
-      return;
-    }
-    
-    // Otherwise just send regular insult
-    console.log('💬 Sending insult (spam count < 2)');
+    // User is in cooldown - send insult
+    console.log('❌ Cooldown active - sending insult');
     const insult = getRandomInsult();
     console.log('📤 RESPONSE (INSULT):', JSON.stringify(insult));
     console.log('📤 RESPONSE LENGTH:', insult.length);

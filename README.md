@@ -8,7 +8,7 @@ A serverless API for Twitch chat that generates random "daily roll" stats with s
 - **Smart Cooldown System**: 
   - When stream is **LIVE**: One roll per stream session
   - When stream is **OFFLINE**: 24-hour cooldown
-  - Spam protection with escalating timeouts
+  - Spam protection with insults for repeated attempts
 - **Twitch API Integration**: Accurately detects stream start time for per-stream cooldowns
 - **Fossabot Integration**: Validates requests and extracts user information
 - **Persistent Storage**: Uses Upstash Redis for reliable cooldown tracking
@@ -72,7 +72,6 @@ cd dailyroll-api
    - `UPSTASH_REDIS_REST_TOKEN` = your Upstash token
    - `TWITCH_CLIENT_ID` = your Twitch Client ID
    - `TWITCH_CLIENT_SECRET` = your Twitch Client Secret
-   - `TIMEOUT_PREFIX` = (optional) Prefix for timeout command, defaults to `/`. Try `.` or `//` if timeout commands are being escaped.
 4. Click "Deploy"
 
 ##### Option B: Using Vercel CLI
