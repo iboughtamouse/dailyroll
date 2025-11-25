@@ -46,10 +46,15 @@ export default async function handler(req, res) {
   // Get the Fossabot token from headers
   const token = req.headers['x-fossabot-customapitoken'];
   
+  // Get twitch channel name
+  const isAugust = req.headers['x-fossabot-channeldisplayname'] === "AUGUST"
+  
   if (!token) {
     res.status(400).send('Missing Fossabot token');
     return;
   }
+
+  if (!isAugust) res.status(400).send('Get out of my fucking API you shitter')
   
   // Validate request and get context
   const validation = await validateAndGetContext(token);
