@@ -164,7 +164,10 @@ export default async function handler(req, res) {
     if (spamCount >= 2) {
       console.log('⏱️ Timeout triggered (spam count >= 2)');
       const insult = getRandomInsult();
-      const timeoutMessage = `/timeout ${username} 60s ${insult}`;
+      // Allow configurable timeout prefix (default: "/")
+      const timeoutPrefix = process.env.TIMEOUT_PREFIX || '/';
+      const timeoutMessage = `${timeoutPrefix}timeout ${username} 60s ${insult}`;
+      console.log('📤 TIMEOUT PREFIX:', JSON.stringify(timeoutPrefix));
       console.log('📤 RESPONSE (TIMEOUT):', JSON.stringify(timeoutMessage));
       console.log('📤 RESPONSE LENGTH:', timeoutMessage.length);
       console.log('📤 RESPONSE BYTES:', Buffer.from(timeoutMessage).toString('hex'));
