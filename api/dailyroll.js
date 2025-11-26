@@ -183,7 +183,7 @@ export default async function handler(req, res) {
   });
   
   // Format and return response
-  let response = formatRollResponse(username, iq, height, heroData);
+  let response = `me ${formatRollResponse(username, iq, height, heroData)}`;
   if (isIvy) {
     response = response + ` AND @uwuivy is a fucking fed ReallyMad`
   }
