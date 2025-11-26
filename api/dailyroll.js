@@ -157,12 +157,38 @@ export default async function handler(req, res) {
   console.log('========================');
   
   if (inCooldown) {
-    // User is in cooldown - send insult
-    console.log('❌ Cooldown active - sending insult');
+    // User is in cooldown - track spam and respond
+    const spamCount = (userData.spamCount || 0) + 1;
+
+    console.log('❌ Cooldown active - spam count:', spamCount);
+
+    // Update user data with incremented spam count (keep lastRoll)
+    await redis.set(userRollKey, {
+      lastRoll: userData.lastRoll,
+      spamCount: spamCount
+    }, {
+      ex: REDIS_EXPIRATION
+    });
+
     const insult = getRandomInsult();
-    console.log('📤 RESPONSE (INSULT):', JSON.stringify(insult));
-    console.log('📤 RESPONSE LENGTH:', insult.length);
-    res.status(200).send(insult);
+
+    // If they've tried 2+ times, issue a timeout command (return 'timeout ...' so Fossabot will prefix with '/')
+    if (spamCount >= 2) {
+      console.log('⏱️ Timeout triggered (spam count >= 2)');
+      const timeoutMessage = `timeout ${username} 60s ${insult}`;
+      console.log('📤 RESPONSE (TIMEOUT):', JSON.stringify(timeoutMessage));
+      console.log('📤 RESPONSE LENGTH:', timeoutMessage.length);
+      console.log('📤 RESPONSE BYTES:', Buffer.from(timeoutMessage).toString('hex'));
+      res.status(200).send(timeoutMessage);
+      return;
+    }
+
+    // Otherwise respond with an emote-style message so Fossabot will output '/me ...'
+    const insultResponse = `me ${insult}`;
+    console.log('💬 Sending insult (spam count < 2)');
+    console.log('📤 RESPONSE (INSULT):', JSON.stringify(insultResponse));
+    console.log('📤 RESPONSE LENGTH:', insultResponse.length);
+    res.status(200).send(insultResponse);
     return;
   }
   
