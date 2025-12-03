@@ -211,7 +211,7 @@ export default async function handler(req, res) {
   // Format and return response
   let response = `me ${formatRollResponse(username, iq, height, heroData)}`;
   if (isIvy) {
-    response = response + ` AND @uwuivy is a fucking fed ReallyMad`
+    response = response + ` AND i hope your wisdom teeth heal up soon @uwuivy ReallyMad`
   }
   console.log('📤 RESPONSE (SUCCESS):', JSON.stringify(response));
   console.log('📤 RESPONSE LENGTH:', response.length);
