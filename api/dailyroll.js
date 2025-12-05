@@ -48,9 +48,6 @@ export default async function handler(req, res) {
   
   // Get twitch channel name
   const isAugust = `${req.headers['x-fossabot-channeldisplayname']}`.toUpperCase() === "AUGUST"
-
-  // Is it uwu fucking ivy...
-  const isIvy = `${req.headers['x-fossabot-message-userdisplayname']}`.toUpperCase() === "UWUIVY"
   
   if (!token) {
     res.status(400).send('Missing Fossabot token');
@@ -210,9 +207,6 @@ export default async function handler(req, res) {
   
   // Format and return response
   let response = `me ${formatRollResponse(username, iq, height, heroData)}`;
-  if (isIvy) {
-    response = response + ` AND i hope your wisdom teeth heal up soon @uwuivy ReallyMad`
-  }
   console.log('📤 RESPONSE (SUCCESS):', JSON.stringify(response));
   console.log('📤 RESPONSE LENGTH:', response.length);
   res.status(200).send(response);
