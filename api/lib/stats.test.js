@@ -4,7 +4,9 @@ import { describe, test, expect } from 'vitest';
 import { 
   heightToInches,
   calculatePepegaScore,
-  formatStatsResponse
+  formatStatsResponse,
+  formatLeaderboardResponse,
+  formatPepegaResponse
 } from './stats.js';
 
 describe('heightToInches', () => {
@@ -286,5 +288,121 @@ describe('formatStatsResponse', () => {
     expect(result).toContain('#10 IQ');
     expect(result).toContain('#15 height');
     expect(result).toContain('#200 pepega');
+  });
+});
+
+describe('formatLeaderboardResponse', () => {
+  test('formats IQ leaderboard correctly', () => {
+    const entries = [
+      { username: 'BrainGod', score: 198, rank: 1 },
+      { username: 'SmartGuy', score: 187, rank: 2 },
+      { username: 'NotBad', score: 156, rank: 3 }
+    ];
+    
+    const result = formatLeaderboardResponse('iq', entries);
+    
+    expect(result).toContain('🧠 Highest IQ');
+    expect(result).toContain('1) BrainGod (198)');
+    expect(result).toContain('2) SmartGuy (187)');
+    expect(result).toContain('3) NotBad (156)');
+  });
+
+  test('formats height leaderboard correctly', () => {
+    const entries = [
+      { username: 'TallBoi', score: 119, rank: 1 }, // 9'11"
+      { username: 'MediumBoi', score: 75, rank: 2 }, // 6'3"
+      { username: 'SmolBoi', score: 48, rank: 3 }  // 4'0"
+    ];
+    
+    const result = formatLeaderboardResponse('height', entries);
+    
+    expect(result).toContain('📏 Tallest');
+    expect(result).toContain('1) TallBoi (9\'11"")');
+    expect(result).toContain('2) MediumBoi (6\'3"")');
+    expect(result).toContain('3) SmolBoi (4\'0"")');
+  });
+
+  test('formats rolls leaderboard correctly', () => {
+    const entries = [
+      { username: 'Addict', score: 500, rank: 1 },
+      { username: 'Regular', score: 42, rank: 2 },
+      { username: 'Casual', score: 7, rank: 3 }
+    ];
+    
+    const result = formatLeaderboardResponse('rolls', entries);
+    
+    expect(result).toContain('🎲 Most Rolls');
+    expect(result).toContain('1) Addict (500)');
+    expect(result).toContain('2) Regular (42)');
+    expect(result).toContain('3) Casual (7)');
+  });
+
+  test('handles empty leaderboard', () => {
+    const result = formatLeaderboardResponse('iq', []);
+    
+    expect(result).toContain('No leaderboard data yet');
+  });
+
+  test('response stays under 450 character limit', () => {
+    const entries = [
+      { username: 'VeryLongUsername12345', score: 200 },
+      { username: 'AnotherLongName67890', score: 199 },
+      { username: 'YetAnotherLongName123', score: 198 },
+      { username: 'AndOneMoreLongName456', score: 197 },
+      { username: 'FinalLongUsername789', score: 196 }
+    ];
+    
+    const result = formatLeaderboardResponse('iq', entries);
+    
+    expect(result.length).toBeLessThan(450);
+  });
+});
+
+describe('formatPepegaResponse', () => {
+  test('formats pepega leaderboard correctly', () => {
+    const entries = [
+      { username: 'Unlucky1', score: 0.15, rank: 1 },
+      { username: 'Unlucky2', score: 0.22, rank: 2 },
+      { username: 'Unlucky3', score: 0.28, rank: 3 }
+    ];
+    
+    const result = formatPepegaResponse(entries);
+    
+    expect(result).toContain('💩 Most Pepega');
+    expect(result).toContain('1) Unlucky1 (0.15)');
+    expect(result).toContain('2) Unlucky2 (0.22)');
+    expect(result).toContain('3) Unlucky3 (0.28)');
+  });
+
+  test('handles empty leaderboard', () => {
+    const result = formatPepegaResponse([]);
+    
+    expect(result).toContain('No pepega data yet');
+  });
+
+  test('formats scores to 2 decimal places', () => {
+    const entries = [
+      { username: 'Test1', score: 0.123456, rank: 1 },
+      { username: 'Test2', score: 0.999999, rank: 2 }
+    ];
+    
+    const result = formatPepegaResponse(entries);
+    
+    expect(result).toContain('Test1 (0.12)');
+    expect(result).toContain('Test2 (1.00)');
+  });
+
+  test('response stays under 450 character limit', () => {
+    const entries = [
+      { username: 'VeryLongUsername12345', score: 0.10 },
+      { username: 'AnotherLongName67890', score: 0.11 },
+      { username: 'YetAnotherLongName123', score: 0.12 },
+      { username: 'AndOneMoreLongName456', score: 0.13 },
+      { username: 'FinalLongUsername789', score: 0.14 }
+    ];
+    
+    const result = formatPepegaResponse(entries);
+    
+    expect(result.length).toBeLessThan(450);
   });
 });

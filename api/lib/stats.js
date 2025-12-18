@@ -233,3 +233,101 @@ export function formatStatsResponse(username, stats, ranks) {
   
   return `${username}: ${rollCount} | ${current} | ${peak}${rankString}`;
 }
+
+/**
+ * Get top N entries from a leaderboard
+ * @param {Redis} redis - Upstash Redis client
+ * @param {string} leaderboardKey - Redis sorted set key
+ * @param {number} n - Number of entries to retrieve
+ * @param {boolean} reverse - If true, get highest scores (default). If false, get lowest.
+ * @returns {Array} Array of { username, score, rank }
+ */
+export async function getTopN(redis, leaderboardKey, n = 5, reverse = true) {
+  try {
+    // Get top N user IDs with scores
+    const results = reverse 
+      ? await redis.zrevrange(leaderboardKey, 0, n - 1, { withScores: true })
+      : await redis.zrange(leaderboardKey, 0, n - 1, { withScores: true });
+    
+    if (!results || results.length === 0) {
+      return [];
+    }
+    
+    // Results come back as [userId, score, userId, score, ...]
+    const entries = [];
+    for (let i = 0; i < results.length; i += 2) {
+      const userId = results[i];
+      const score = results[i + 1];
+      
+      // Get username
+      const username = await redis.get(`dailyroll:username:${userId}`);
+      
+      entries.push({
+        username: username || 'Unknown',
+        score,
+        rank: Math.floor(i / 2) + 1
+      });
+    }
+    
+    return entries;
+  } catch (error) {
+    console.error('❌ Error getting leaderboard entries:', error);
+    return [];
+  }
+}
+
+/**
+ * Format leaderboard response for Twitch chat
+ * @param {string} type - Leaderboard type ('iq', 'height', 'rolls')
+ * @param {Array} entries - Array of { username, score, rank }
+ * @returns {string} Formatted leaderboard string
+ */
+export function formatLeaderboardResponse(type, entries) {
+  if (!entries || entries.length === 0) {
+    return '🏆 No leaderboard data yet! Be the first to roll.';
+  }
+  
+  // Emoji and label by type
+  const labels = {
+    iq: { emoji: '🧠', label: 'Highest IQ', suffix: '' },
+    height: { emoji: '📏', label: 'Tallest', suffix: '"' },
+    rolls: { emoji: '🎲', label: 'Most Rolls', suffix: '' }
+  };
+  
+  const config = labels[type] || { emoji: '🏆', label: 'Top', suffix: '' };
+  
+  // Format entries
+  const formattedEntries = entries.map(entry => {
+    let scoreDisplay = entry.score;
+    
+    // Special formatting for height (convert inches to feet'inches")
+    if (type === 'height') {
+      const feet = Math.floor(entry.score / 12);
+      const inches = entry.score % 12;
+      scoreDisplay = `${feet}'${inches}"`;
+    }
+    
+    return `${entry.rank}) ${entry.username} (${scoreDisplay}${config.suffix})`;
+  }).join(' ');
+  
+  return `${config.emoji} ${config.label}: ${formattedEntries}`;
+}
+
+/**
+ * Format pepega leaderboard response for Twitch chat
+ * @param {Array} entries - Array of { username, score, rank }
+ * @returns {string} Formatted pepega leaderboard string
+ */
+export function formatPepegaResponse(entries) {
+  if (!entries || entries.length === 0) {
+    return '💩 No pepega data yet! Roll to find out who has the worst luck.';
+  }
+  
+  // Format entries with pepega score
+  const formattedEntries = entries.map(entry => {
+    const scoreDisplay = entry.score.toFixed(2);
+    return `${entry.rank}) ${entry.username} (${scoreDisplay})`;
+  }).join(' ');
+  
+  return `💩 Most Pepega: ${formattedEntries}`;
+}
