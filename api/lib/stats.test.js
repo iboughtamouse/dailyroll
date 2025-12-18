@@ -3,7 +3,8 @@
 import { describe, test, expect } from 'vitest';
 import { 
   heightToInches,
-  calculatePepegaScore
+  calculatePepegaScore,
+  formatStatsResponse
 } from './stats.js';
 
 describe('heightToInches', () => {
@@ -146,5 +147,144 @@ describe('calculatePepegaScore', () => {
       expect(score).toBeGreaterThanOrEqual(0);
       expect(score).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+describe('formatStatsResponse', () => {
+  test('handles user with no rolls', () => {
+    const result = formatStatsResponse('TestUser', null, {});
+    expect(result).toBe('TestUser: No rolls yet! Type !dailyroll to get started.');
+  });
+
+  test('handles user with zero rolls', () => {
+    const stats = { totalRolls: 0 };
+    const result = formatStatsResponse('TestUser', stats, {});
+    expect(result).toBe('TestUser: No rolls yet! Type !dailyroll to get started.');
+  });
+
+  test('formats single roll correctly', () => {
+    const stats = {
+      totalRolls: 1,
+      currentIQ: 142,
+      currentHeight: '6\'3"',
+      currentHero: 'Reinhardt',
+      highestIQ: 142,
+      tallestHeight: '6\'3"'
+    };
+    const ranks = { iqRank: 5, heightRank: 12, pepegaRank: 47 };
+    
+    const result = formatStatsResponse('TestUser', stats, ranks);
+    
+    expect(result).toContain('TestUser');
+    expect(result).toContain('1 roll'); // Singular
+    expect(result).toContain('142 IQ');
+    expect(result).toContain('6\'3"');
+    expect(result).toContain('Reinhardt');
+    expect(result).toContain('#5 IQ');
+    expect(result).toContain('#12 height');
+    expect(result).toContain('#47 pepega');
+  });
+
+  test('formats multiple rolls correctly', () => {
+    const stats = {
+      totalRolls: 23,
+      currentIQ: 100,
+      currentHeight: '5\'6"',
+      currentHero: 'Mercy',
+      highestIQ: 198,
+      tallestHeight: '9\'2"'
+    };
+    const ranks = { iqRank: 3, heightRank: 7, pepegaRank: 150 };
+    
+    const result = formatStatsResponse('TestUser', stats, ranks);
+    
+    expect(result).toContain('23 rolls'); // Plural
+    expect(result).toContain('Today: 100 IQ, 5\'6", Mercy');
+    expect(result).toContain('Peak: 198 IQ, 9\'2"');
+  });
+
+  test('handles missing ranks gracefully', () => {
+    const stats = {
+      totalRolls: 5,
+      currentIQ: 50,
+      currentHeight: '2\'4"',
+      currentHero: 'Wrecking Ball',
+      highestIQ: 87,
+      tallestHeight: '5\'2"'
+    };
+    const ranks = { iqRank: null, heightRank: null, pepegaRank: null };
+    
+    const result = formatStatsResponse('TestUser', stats, ranks);
+    
+    expect(result).toContain('TestUser');
+    expect(result).toContain('5 rolls');
+    expect(result).not.toContain('Rank:');
+  });
+
+  test('handles partial ranks', () => {
+    const stats = {
+      totalRolls: 10,
+      currentIQ: 120,
+      currentHeight: '6\'0"',
+      currentHero: 'Ana',
+      highestIQ: 150,
+      tallestHeight: '7\'1"'
+    };
+    const ranks = { iqRank: 25, heightRank: null, pepegaRank: 100 };
+    
+    const result = formatStatsResponse('TestUser', stats, ranks);
+    
+    expect(result).toContain('#25 IQ');
+    expect(result).toContain('#100 pepega');
+    expect(result).not.toContain('height');
+  });
+
+  test('response stays under 450 character limit', () => {
+    const stats = {
+      totalRolls: 999,
+      currentIQ: 200,
+      currentHeight: '9\'11"',
+      currentHero: 'Soldier: 76', // Longest hero name
+      highestIQ: 200,
+      tallestHeight: '9\'11"'
+    };
+    const ranks = { iqRank: 999, heightRank: 999, pepegaRank: 999 };
+    
+    const result = formatStatsResponse('VeryLongUsername1234567890', stats, ranks);
+    
+    expect(result.length).toBeLessThan(450);
+  });
+
+  test('includes all required components', () => {
+    const stats = {
+      totalRolls: 42,
+      currentIQ: 156,
+      currentHeight: '7\'2"',
+      currentHero: 'Widowmaker',
+      highestIQ: 189,
+      tallestHeight: '8\'5"'
+    };
+    const ranks = { iqRank: 10, heightRank: 15, pepegaRank: 200 };
+    
+    const result = formatStatsResponse('TestUser', stats, ranks);
+    
+    // Username
+    expect(result).toContain('TestUser');
+    // Roll count
+    expect(result).toContain('42 rolls');
+    // Current roll (today's)
+    expect(result).toContain('Today:');
+    expect(result).toContain('156 IQ');
+    expect(result).toContain('7\'2"');
+    expect(result).toContain('Widowmaker');
+    // Peak stats
+    expect(result).toContain('Peak:');
+    expect(result).toContain('189 IQ');
+    expect(result).toContain('8\'5"');
+    // Ranks
+    expect(result).toContain('Rank:');
+    expect(result).toContain('#10 IQ');
+    expect(result).toContain('#15 height');
+    expect(result).toContain('#200 pepega');
   });
 });

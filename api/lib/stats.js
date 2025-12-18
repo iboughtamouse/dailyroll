@@ -205,3 +205,31 @@ export async function getLeaderboardRanks(redis, userId) {
     return { iqRank: null, heightRank: null, rollsRank: null, pepegaRank: null };
   }
 }
+
+/**
+ * Format stats response for Twitch chat
+ * Max length: 450 characters (safe buffer from 500 limit)
+ * @param {string} username - User's display name
+ * @param {Object} stats - User stats from getUserStats()
+ * @param {Object} ranks - Leaderboard ranks from getLeaderboardRanks()
+ * @returns {string} Formatted stats string
+ */
+export function formatStatsResponse(username, stats, ranks) {
+  if (!stats || stats.totalRolls === 0) {
+    return `${username}: No rolls yet! Type !dailyroll to get started.`;
+  }
+  
+  // Build response parts
+  const rollCount = `${stats.totalRolls} roll${stats.totalRolls === 1 ? '' : 's'}`;
+  const current = `Today: ${stats.currentIQ} IQ, ${stats.currentHeight}, ${stats.currentHero}`;
+  const peak = `Peak: ${stats.highestIQ} IQ, ${stats.tallestHeight}`;
+  
+  // Build ranks string (only show ranks that exist)
+  const rankParts = [];
+  if (ranks.iqRank) rankParts.push(`#${ranks.iqRank} IQ`);
+  if (ranks.heightRank) rankParts.push(`#${ranks.heightRank} height`);
+  if (ranks.pepegaRank) rankParts.push(`#${ranks.pepegaRank} pepega`);
+  const rankString = rankParts.length > 0 ? ` | Rank: ${rankParts.join(', ')}` : '';
+  
+  return `${username}: ${rollCount} | ${current} | ${peak}${rankString}`;
+}
