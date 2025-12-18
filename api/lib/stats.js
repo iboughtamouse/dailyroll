@@ -337,7 +337,7 @@ export function formatPepegaResponse(entries) {
   
   // Format entries with pepega score
   const formattedEntries = entries.map(entry => {
-    const scoreDisplay = entry.score.toFixed(2);
+    const scoreDisplay = parseFloat(entry.score).toFixed(2);
     return `${entry.rank}) ${entry.username} (${scoreDisplay})`;
   }).join(' ');
   
