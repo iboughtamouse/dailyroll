@@ -42,11 +42,12 @@ newbie: No rolls yet! Type !roll to get started.
 ### Leaderboards (`!t500`, `!b500`)
 
 ```
-🧠 Highest IQ: 1) BrainGod (198) 2) SmartGuy (187) 3) NotBad (156) 4) Average (142) 5) Normal (130)
-📏 Tallest: 1) TallBoi (9'11") 2) BigGuy (8'5") 3) MediumBoi (6'3") 4) ShortKing (5'6") 5) Smol (4'2")
-🎲 Most Rolls: 1) Addict (500) 2) Regular (250) 3) Active (150) 4) Casual (75) 5) NewGuy (10)
-💩 Most Pepega: 1) Unlucky1 (0.15) 2) Unlucky2 (0.22) 3) BadLuck (0.28) 4) Pepega (0.31) 5) Unfortunate (0.35)
+🧠 Highest IQ This Stream: 🥇 BrainGod (198) | 🥈 SmartGuy (187) | 🥉 NotBad (156) | #4 Average (142) | #5 Normal (130)
+📏 Tallest This Stream: 🥇 TallBoi (9'11") | 🥈 BigGuy (8'5") | 🥉 MediumBoi (6'3") | #4 ShortKing (5'6") | #5 Smol (4'2")
+💩 Lowest IQ This Stream: 🥇 Unlucky1 (15) | 🥈 Unlucky2 (22) | 🥉 BadLuck (28) | #4 Pepega (35) | #5 Unfortunate (42)
 ```
+
+**Note:** Leaderboards reset each stream and show only the current broadcast's rankings.
 
 ## Deployment
 
@@ -198,13 +199,14 @@ const FIVE_MINUTES_SECONDS = 5 * 60; // Change this value
 
 Required environment variables in Vercel:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `UPSTASH_REDIS_REST_URL` | Your Upstash Redis REST URL | `https://xyz.upstash.io` |
-| `UPSTASH_REDIS_REST_TOKEN` | Your Upstash Redis REST token | `AXXXxxxXXX...` |
-| `TWITCH_CLIENT_ID` | Your Twitch application Client ID | `abc123xyz...` |
-| `TWITCH_CLIENT_SECRET` | Your Twitch application Client Secret | `secret123...` |
-| `STREAMER_NAME` | Your Twitch display name (uppercase) | `AUGUST` |
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `UPSTASH_REDIS_REST_URL` | Your Upstash Redis REST URL | *(required)* | `https://xyz.upstash.io` |
+| `UPSTASH_REDIS_REST_TOKEN` | Your Upstash Redis REST token | *(required)* | `AXXXxxxXXX...` |
+| `TWITCH_CLIENT_ID` | Your Twitch application Client ID | *(required)* | `abc123xyz...` |
+| `TWITCH_CLIENT_SECRET` | Your Twitch application Client Secret | *(required)* | `secret123...` |
+| `STREAMER_NAME` | Your Twitch display name (uppercase) | *(required)* | `AUGUST` |
+| `MAX_ROLLS_PER_STREAM` | Max rolls allowed per stream (for testing) | `1` | `5` |
 
 ## How It Works
 
@@ -331,24 +333,26 @@ Pull requests welcome! Feel free to add features, fix bugs, or improve documenta
 
 ### First-Time Deployment
 
-If you're deploying stats for the first time or migrating from an older version without stats:
+For a fresh deployment:
 
-1. Go to your Upstash Redis dashboard
-2. Run `FLUSHDB` in the CLI to clear old data
-3. Deploy to Vercel
-4. Configure all Fossabot commands
+1. Fork/clone this repository
+2. Set up Upstash Redis and Twitch API credentials
+3. Deploy to Vercel with environment variables
+4. Configure Fossabot commands
 5. Test in Twitch chat
 
-This ensures all users start with the new stats schema.
+The first user roll will initialize the stats system automatically. No database migration needed.
 
 ### Redis Schema
 
 The API uses the following Redis structure:
-- **User data**: `dailyroll:user:{userId}` (hash with 20+ fields)
+- **User data**: `dailyroll:user:{userId}` (hash with 24 fields including stats and cooldown tracking)
 - **Username lookup**: `dailyroll:username:{userId}` (string)
-- **Leaderboards**: `dailyroll:leaderboard:{iq|height|rolls|pepega}` (sorted sets)
+- **Leaderboards**: `dailyroll:leaderboard:stream_{timestamp}:{iq|height|iq_low}` (sorted sets, per-stream)
 - **Stream cache**: `stream:{providerId}:start_time` (string, 5min TTL)
 - **Twitch token**: `twitch:app_token` (string, 50d TTL)
+
+**Note:** Leaderboards are stream-specific and reset each broadcast. Old stream leaderboards accumulate in Redis and may need periodic cleanup.
 
 See [docs/architecture/data-model.md](docs/architecture/data-model.md) for detailed schema documentation.
 

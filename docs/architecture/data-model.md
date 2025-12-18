@@ -4,33 +4,7 @@
 
 This document describes the Redis data model for the Daily Roll API.
 
-## Current State (v1.0)
-
-### User Cooldown Data
-```
-Key: dailyroll:<userId>
-Type: Hash
-TTL: 48 hours
-Value: {
-  lastRoll: <timestamp>,
-  spamCount: <integer>
-}
-```
-
-### Cached Data
-```
-Key: twitch:app_token
-Type: String
-TTL: 50 days
-Value: <access_token>
-
-Key: stream:<providerId>:start_time
-Type: String
-TTL: 5 minutes
-Value: <ISO timestamp>
-```
-
-## Planned State (v2.0 - Stats & Leaderboards)
+## Current State (Production)
 
 ### User Stats & History
 ```
@@ -66,35 +40,35 @@ Fields: {
   tier4Count: Integer,
   tier5Count: Integer,
   
-  // Cooldown (migrated from old schema)
-  lastRoll: Integer,
-  spamCount: Integer
-}
+      // Cooldown tracking
+      lastRoll: Integer,
+      lastStreamKey: String,       // e.g., "stream_2025-12-18T12:34:56Z"
+      rollsThisStream: Integer,    // Count of rolls in current stream
+      spamCount: Integer
+    }
+    ```
+
+### Stream-Based Leaderboards
 ```
-
-### Global Leaderboards
-```
-Key: dailyroll:leaderboard:iq
+Key: dailyroll:leaderboard:stream_<timestamp>:iq
 Type: Sorted Set
-Score: Highest IQ achieved
+Score: Highest IQ achieved this stream
 Member: <userId>
 
-Key: dailyroll:leaderboard:height
+Key: dailyroll:leaderboard:stream_<timestamp>:height
 Type: Sorted Set
-Score: Tallest height in inches
+Score: Tallest height in inches this stream
 Member: <userId>
 
-Key: dailyroll:leaderboard:rolls
+Key: dailyroll:leaderboard:stream_<timestamp>:iq_low
 Type: Sorted Set
-Score: Total number of rolls
+Score: Lowest IQ (for bottom rankings)
 Member: <userId>
 
-Key: dailyroll:leaderboard:pepega
-Type: Sorted Set
-Score: Pepega score (lower = more pepega)
-Member: <userId>
-```
+Example: dailyroll:leaderboard:stream_2025-12-18T12:34:56Z:iq
 
+Note: Leaderboards reset each stream using Twitch stream start time as unique key.
+All leaderboards are per-stream, not all-time.
 ### Username Lookup
 ```
 Key: dailyroll:username:<userId>
@@ -105,40 +79,53 @@ Value: <username>
 Purpose: Efficiently get usernames for leaderboard display without fetching full user hash
 ```
 
+### Cached Data
+```
+Key: twitch:app_token
+Type: String
+TTL: 50 days
+Value: <access_token>
+
+Key: stream:<providerId>:start_time
+Type: String
+TTL: 5 minutes
+Value: <ISO timestamp>
+```
+
 ## Storage Estimates
 
-### Per User (v2.0)
-- User hash: ~500 bytes (20 fields @ ~25 bytes each)
-- Leaderboard entries: 4 × 24 bytes = 96 bytes
+### Per User
+- User hash: ~600 bytes (24 fields including cooldown tracking)
+- Leaderboard entries per stream: 3 × 24 bytes = 72 bytes
 - Username lookup: ~50 bytes
-- **Total per user: ~650 bytes**
+- **Total per user: ~720 bytes**
 
 ### Capacity
 - Upstash free tier: 256 MB
-- Users supported: ~400,000 users (won't reach this)
-- Expected usage (1000 active users): ~650 KB
+- Users supported: ~350,000 users (won't reach this)
+- Expected usage (1000 active users): ~720 KB
+
+### Per Stream
+- 3 leaderboards × 1000 users × 24 bytes = ~72 KB per stream
+- Old stream leaderboards are not automatically cleaned up
+- Manual cleanup recommended periodically (delete old stream_* keys)
 
 ### Daily Command Usage
-- Daily roll: 1 GET + 1 SET + 4 ZADD = 6 commands per roll
-- Stats query: 1 HGETALL + 4 ZRANK = 5 commands
-- Leaderboard query: 1 ZREVRANGE + 5 HGET = 6 commands
-- Expected daily: ~500 rolls + 100 stats + 50 leaderboards = ~4,000 commands
+- Daily roll: 1 HGETALL + 1 HSET + 3 ZADD = 5 commands per roll
+- Stats query: 1 HGETALL + 3 ZRANK = 4 commands
+- Leaderboard query: 1 ZRANGE + 5 GET = 6 commands
+- Expected daily: ~500 rolls + 100 stats + 50 leaderboards = ~4,500 commands
 - Upstash free tier limit: 10,000 commands/day
 - **Well within limits**
 
-## Migration Strategy
+## Configuration
 
-When deploying stats feature (v2.0):
-1. Run `FLUSHDB` in Upstash dashboard before deployment
-2. Fresh start for all users (no cooldowns, no stats)
-3. Everyone can roll immediately after deployment
-4. Leaderboards start from scratch
+### Roll Limits
+- `MAX_ROLLS_PER_STREAM` environment variable (default: 1)
+- Tracks rolls per stream using `lastStreamKey` and `rollsThisStream` fields
+- Resets automatically when new stream starts (different stream key)
 
-**What gets cleared:**
-- All user cooldown data
-- Cached Twitch tokens (regenerate automatically)
-- Cached stream start times (regenerate in 5 minutes)
-
-**Impact:** Minimal - users who were on cooldown can roll right away (bonus), caches rebuild automatically on first request.
-
-**Why FLUSHDB:** Simpler than schema migration, true fresh start for leaderboards, no migration code needed.
+### Leaderboard Behavior
+- Leaderboards are stream-specific and reset each broadcast
+- Uses Twitch API stream start time as unique session identifier
+- No automatic cleanup of old stream leaderboards (manual FLUSHDB or key deletion needed)

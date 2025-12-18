@@ -9,16 +9,19 @@ These instructions help AI coding agents work productively in this repo. Focus o
 - Runtime: Node 18+ ESM, serverless on Vercel.
 
 ## Key Files
-- Handler: `api/dailyroll.js` — validates Fossabot request, enforces cooldowns, emits Fossabot-friendly responses.
-- Game logic: `api/lib/game.js` — generates IQ, height, hero by tier; formats tier-specific responses; insult list.
+- Handler: `api/dailyroll.js` — validates Fossabot request, enforces per-stream roll limits, emits Fossabot-friendly responses.
+- Game logic: `api/lib/game.js` — generates IQ, height, hero by tier; formats fortune-style responses with tier flavor; insult list.
+- Stats system: `api/lib/stats.js` — tracks user stats, updates stream-based leaderboards, calculates pepega scores.
 - Twitch integration: `api/lib/twitch.js` — app token management, stream start time (5 min cache).
+- Stats endpoints: `api/stats/me.js` (!stats), `api/stats/leaderboard.js` (!t500), `api/stats/pepega.js` (!b500).
 - Data: `api/data/heroes.json` — tiered hero roster (validated at module load).
-- Tests: `api/lib/game.test.js` — Vitest characterization tests for `game.js` behavior.
-- Vercel config: `vercel.json` — function limits for `api/dailyroll.js`.
+- Tests: `api/lib/game.test.js`, `api/lib/stats.test.js` — Vitest tests (50 total).
+- Vercel config: `vercel.json` — function limits for all endpoints.
 - Project overview and deploy steps: `README.md`.
 
 ## Environment & Dependencies
 - Required env vars (Vercel): `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `STREAMER_NAME` (uppercase display name used for channel gating).
+- Optional env vars: `MAX_ROLLS_PER_STREAM` (default: 1, allows configuring multiple rolls per stream for testing).
 - Node 18+ (uses global `fetch`). ESM modules (`"type": "module"`).
 - Redis client: `@upstash/redis` using `Redis.fromEnv()` (always use this in serverless functions - auto-reads UPSTASH_* env vars).
 
@@ -42,17 +45,22 @@ These instructions help AI coding agents work productively in this repo. Focus o
 
 ## Cooldown Logic & Redis Keys
 - Keys and payloads:
-  - `dailyroll:<userId>` → `{ lastRoll: <ms>, spamCount: <int> }` (TTL: 48h)
+  - `dailyroll:user:<userId>` → hash with stats, cooldown fields (lastRoll, lastStreamKey, rollsThisStream, spamCount)
+  - `dailyroll:leaderboard:stream_<timestamp>:<type>` → sorted sets (iq, height, iq_low) - resets per stream
+  - `dailyroll:username:<userId>` → username string for leaderboard lookups
   - `twitch:app_token` → `<access_token>` (TTL: 50 days)
   - `stream:<providerId>:start_time` → ISO string (TTL: 5 min)
-- Live stream: allow 1 roll per stream using actual `started_at` (Twitch API).
+- Live stream: configurable rolls per stream (MAX_ROLLS_PER_STREAM env var, default 1), tracked via stream start timestamp.
 - Offline or missing `started_at`: 24-hour cooldown window.
+- Leaderboards are stream-specific using Twitch stream start time as unique key.
 
 ## Game Logic Patterns
 - IQ: integer 0–200. Height: 0'0"–9'11". Tier is percentile-based: normalizes IQ (0-200) and height (0-119 inches), averages them, then bins into 5 ranges via `calculateTier()`.
 - Hero tiers: defined in `api/data/heroes.json` (must include `hamster`, `unga`, `normal`, `bigbrain`, `overqualified`). On load, `game.js` validates presence and non-empty `heroes`.
-- Responses: `formatRollResponse()` varies by tier; includes special Reinhardt "CHUNGUS" flourish in tier 2 (meme/easter egg).
-- Insults: `INSULTS` array in `game.js`; `getRandomInsult()` selects one at random.
+- Responses: `formatRollResponse()` uses 8 fortune-style templates with tier-specific flavor text; includes special Reinhardt "CHUNGUS" flourish in tier 2 (meme/easter egg).
+- Insults: `INSULTS` array in `game.js`; `getRandomInsult()` selects one at random for cooldown spam.
+- Stats: All-time stats in user hash, stream-based leaderboards reset each broadcast.
+- Leaderboards show top 5 with medal emojis (🥇🥈🥉), character limit <450 chars.
 
 ## Project-Specific Conventions
 - Keep `api/dailyroll.js` stateless per-request (no global state between invocations). Use console logging already present for traceability.
@@ -62,6 +70,9 @@ These instructions help AI coding agents work productively in this repo. Focus o
 
 ## Safe Change Examples
 - Add an insult: edit `INSULTS` in `api/lib/game.js`.
+- Add fortune template: edit `fortuneTemplates` array in `api/lib/game.js`.
+- Change tier flavor text: edit `flavorByTier` in `api/lib/game.js`.
+- Adjust roll limit: set `MAX_ROLLS_PER_STREAM` env var (default: 1).
 - Tweak offline cooldown: adjust `OFFLINE_COOLDOWN_MS` in `api/dailyroll.js`.
 - Change Twitch cache window: edit `FIVE_MINUTES_SECONDS` in `api/lib/twitch.js`.
 - Update roster: modify `api/data/heroes.json` and ensure tiers remain valid.
