@@ -143,12 +143,19 @@ Save and test in Twitch chat!
 
 The API uses different cooldown strategies depending on stream status:
 
-- **When LIVE**: Users can roll once per stream. The cooldown resets when a new stream starts.
+- **When LIVE**: Users can roll a configurable number of times per stream (default: 1). The cooldown resets when a new stream starts.
 - **When OFFLINE**: Users can roll once per 24 hours.
 
 This behavior is handled automatically by querying the Twitch API for stream status.
 
-### Modify Cooldown Duration
+### Modify Roll Limits
+
+To allow multiple rolls per stream (useful for testing), set the `MAX_ROLLS_PER_STREAM` environment variable:
+
+```bash
+# In Vercel dashboard or .env file
+MAX_ROLLS_PER_STREAM=5  # Allow 5 rolls per stream (default: 1)
+```
 
 To change the offline cooldown duration, edit `api/dailyroll.js`:
 

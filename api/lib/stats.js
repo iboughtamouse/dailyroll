@@ -86,6 +86,13 @@ export async function updateUserStats(redis, userId, username, providerId, rollD
     const tierField = `tier${tier}Count`;
     const tierCount = parseInt(existingStats[tierField] || 0) + 1;
     
+    // Track rolls per stream for cooldown
+    const currentStreamKey = await getStreamKey(redis, providerId);
+    const lastStreamKey = existingStats.lastStreamKey || '';
+    const rollsThisStream = (currentStreamKey === lastStreamKey) 
+      ? parseInt(existingStats.rollsThisStream || 0) + 1 
+      : 1;
+    
     // Build updated stats
     const updatedStats = {
       username,
@@ -116,9 +123,11 @@ export async function updateUserStats(redis, userId, username, providerId, rollD
       tier4Count: parseInt(existingStats.tier4Count || 0) + (tier === 4 ? 1 : 0),
       tier5Count: parseInt(existingStats.tier5Count || 0) + (tier === 5 ? 1 : 0),
       
-      // Cooldown fields (preserve existing)
-      lastRoll: existingStats.lastRoll || timestamp,
-      spamCount: existingStats.spamCount || 0
+      // Cooldown fields
+      lastRoll: timestamp,
+      lastStreamKey: currentStreamKey,
+      rollsThisStream: rollsThisStream,
+      spamCount: 0  // Reset spam count on successful roll
     };
     
     // Save updated stats
