@@ -121,32 +121,10 @@ export function getRandomInsult() {
 }
 
 /**
- * Get extreme value reactions for special rolls
- */
-function getExtremeReaction(iq, height) {
-  const reactions = [];
-  
-  // Parse height to inches for comparison
-  const [feet, inches] = height.split("'").map(s => parseInt(s.replace('"', '')));
-  const totalInches = (feet * 12) + inches;
-  
-  // IQ reactions
-  if (iq >= 190) reactions.push('GIGABRAIN 🧠');
-  else if (iq < 50) reactions.push('pure chaos energy 🐹');
-  
-  // Height reactions
-  if (totalInches >= 108) reactions.push('ABSOLUTE UNIT 🏔️');  // 9'+
-  else if (totalInches < 24) reactions.push('smol bean 🐁');  // <2'
-  
-  return reactions.length > 0 ? ' ' + reactions.join(' ') : '';
-}
-
-/**
  * Format the daily roll response with tier-specific flavor text
  */
 export function formatRollResponse(username, iq, height, heroData, isPersonalBest = false) {
   const { hero, tier, tierName} = heroData;
-  const extreme = getExtremeReaction(iq, height);
   
   // Fortune-style templates (like sr2)
   const fortuneTemplates = [
@@ -215,9 +193,6 @@ export function formatRollResponse(username, iq, height, heroData, isPersonalBes
   if (hero === "Reinhardt" && tier === 2) {
     response += " HONOR!! JUSTICE!! CHUNGUS FUCKING CHUNGUS!";
   }
-  
-  // Add extreme reactions
-  response += extreme;
   
   // Add personal best celebration
   if (isPersonalBest) {
