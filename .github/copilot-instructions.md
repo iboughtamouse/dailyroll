@@ -20,7 +20,7 @@ These instructions help AI coding agents work productively in this repo. Focus o
 ## Environment & Dependencies
 - Required env vars (Vercel): `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `STREAMER_NAME` (uppercase display name used for channel gating).
 - Node 18+ (uses global `fetch`). ESM modules (`"type": "module"`).
-- Redis client: `@upstash/redis` using `Redis.fromEnv()`.
+- Redis client: `@upstash/redis` using `Redis.fromEnv()` (always use this in serverless functions - auto-reads UPSTASH_* env vars).
 
 ## Developer Workflows
 - Install and run locally:
@@ -49,16 +49,16 @@ These instructions help AI coding agents work productively in this repo. Focus o
 - Offline or missing `started_at`: 24-hour cooldown window.
 
 ## Game Logic Patterns
-- IQ: integer 0–200. Height: 0'0"–9'11". Tier is based on normalized IQ and height inches.
+- IQ: integer 0–200. Height: 0'0"–9'11". Tier is percentile-based: normalizes IQ (0-200) and height (0-119 inches), averages them, then bins into 5 ranges via `calculateTier()`.
 - Hero tiers: defined in `api/data/heroes.json` (must include `hamster`, `unga`, `normal`, `bigbrain`, `overqualified`). On load, `game.js` validates presence and non-empty `heroes`.
-- Responses: `formatRollResponse()` varies by tier; includes special Reinhardt “CHUNGUS” flourish in tier 2.
+- Responses: `formatRollResponse()` varies by tier; includes special Reinhardt "CHUNGUS" flourish in tier 2 (meme/easter egg).
 - Insults: `INSULTS` array in `game.js`; `getRandomInsult()` selects one at random.
 
 ## Project-Specific Conventions
-- Keep `api/dailyroll.js` side-effect-free beyond handling a single request. Use console logging already present for traceability.
+- Keep `api/dailyroll.js` stateless per-request (no global state between invocations). Use console logging already present for traceability.
 - Prefer adding heroes via `api/data/heroes.json`; avoid hardcoding into `game.js` (it reads from JSON and validates tiers).
 - Only modify cooldown behavior in `api/dailyroll.js` (offline window) and `api/lib/twitch.js` (cache TTL) as documented in `README.md`.
-- Tests document current behavior; update/add tests in `api/lib/game.test.js` when changing response/tier rules.
+- Tests are characterization tests documenting current behavior. When intentionally changing tier logic, response formats, or hero selection, update corresponding tests in `api/lib/game.test.js` to match new expected behavior.
 
 ## Safe Change Examples
 - Add an insult: edit `INSULTS` in `api/lib/game.js`.
