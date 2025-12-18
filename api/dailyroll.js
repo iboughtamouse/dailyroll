@@ -10,6 +10,7 @@ import {
   getRandomInsult,
   formatRollResponse,
 } from "./lib/game.js";
+import { updateUserStats } from "./lib/stats.js";
 
 // Redis expiration for user data
 const REDIS_EXPIRATION = 48 * 60 * 60; // 48 hours in seconds
@@ -111,8 +112,8 @@ export default async function handler(req, res) {
 
   // Check if user has rolled before
   const now = Date.now();
-  const userRollKey = `dailyroll:${userId}`;
-  const userData = await redis.get(userRollKey);
+  const userKey = `dailyroll:user:${userId}`;
+  const userData = await redis.hgetall(userKey);
 
   // Log current state for monitoring
   console.log("=== DAILYROLL REQUEST ===");
@@ -178,17 +179,10 @@ export default async function handler(req, res) {
 
     console.log("❌ Cooldown active - spam count:", spamCount);
 
-    // Update user data with incremented spam count (keep lastRoll)
-    await redis.set(
-      userRollKey,
-      {
-        lastRoll: userData.lastRoll,
-        spamCount: spamCount,
-      },
-      {
-        ex: REDIS_EXPIRATION,
-      }
-    );
+    // Update spam count in user hash
+    await redis.hset(userKey, {
+      spamCount: spamCount
+    });
 
     const insult = getRandomInsult();
 
@@ -225,17 +219,17 @@ export default async function handler(req, res) {
     `Generated: IQ ${iq}, Height ${height}, Hero ${heroData.hero} (Tier ${heroData.tier})`
   );
 
-  // Store timestamp and reset spam count with 48-hour expiration
-  await redis.set(
-    userRollKey,
-    {
-      lastRoll: now,
-      spamCount: 0,
-    },
-    {
-      ex: REDIS_EXPIRATION,
-    }
-  );
+  // Update user stats and leaderboards
+  await updateUserStats(redis, userId, username, {
+    iq,
+    height,
+    hero: heroData.hero,
+    tier: heroData.tier,
+    timestamp: now
+  });
+
+  // Note: updateUserStats now manages cooldown fields (lastRoll, spamCount)
+  // No need for separate cooldown storage
 
   // Format and return response
   let response = `me ${formatRollResponse(username, iq, height, heroData)}`;
