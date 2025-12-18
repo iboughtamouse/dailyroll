@@ -64,19 +64,33 @@ export default async function handler(req, res) {
     console.log('=== PEPEGA REQUEST ===');
     console.log('Channel:', channelName);
     
+    // Get channel provider ID
+    const channelProviderId = context.channel?.provider_id;
+    if (!channelProviderId) {
+      res.status(400).send('Could not identify channel');
+      return;
+    }
+    
     // Initialize Redis client
     const redis = Redis.fromEnv();
     
-    console.log('📊 Fetching bottom 5 pepega scores...');
+    // Get stream key
+    const { getStreamKey } = await import('../lib/stats.js');
+    const streamKey = await getStreamKey(redis, channelProviderId);
+    const leaderboardKey = `dailyroll:leaderboard:${streamKey}:iq_low`;
     
-    // Get bottom 5 (lowest pepega scores)
-    const entries = await getTopN(redis, 'dailyroll:leaderboard:pepega', 5, false);
+    console.log('📊 Fetching bottom 5 IQ scores...');
+    console.log('📊 Stream key:', streamKey);
+    console.log('📊 Using key:', leaderboardKey);
+    
+    // Get bottom 5 (lowest IQ scores)
+    const entries = await getTopN(redis, leaderboardKey, 5, false);
     
     console.log('📊 getTopN returned:', entries);
     
-    console.log(`✅ Retrieved ${entries.length} pepega entries`);
+    console.log(`✅ Retrieved ${entries.length} entries`);
     
-    // Format and return response
+    // Format and return response (now shows actual IQ)
     const response = formatPepegaResponse(entries);
     
     console.log('📤 RESPONSE:', response);

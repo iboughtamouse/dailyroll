@@ -1,6 +1,31 @@
 // Stats management utilities for Daily Roll
 // Handles user stats tracking and leaderboard updates
 
+import { getStreamStartTime } from './twitch.js';
+
+/**
+ * Get stream-specific key for leaderboards
+ * Uses stream start time as unique identifier (like sr2)
+ * @param {Redis} redis - Redis client
+ * @param {string} providerId - Twitch user ID of streamer
+ * @returns {string} Stream key like "stream_2025-12-18T12:34:56Z" or "offline_2025-12-18"
+ */
+export async function getStreamKey(redis, providerId) {
+  try {
+    const startTime = await getStreamStartTime(redis, providerId);
+    if (startTime) {
+      // Use ISO timestamp as key (e.g., "2025-12-18T12:34:56Z")
+      return `stream_${startTime}`;
+    }
+  } catch (error) {
+    console.error('Error getting stream start time:', error);
+  }
+  
+  // Fallback to date-based key when offline or error
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  return `offline_${today}`;
+}
+
 /**
  * Convert height string (e.g., "6'3"") to total inches
  */
@@ -36,9 +61,10 @@ export function calculatePepegaScore(stats) {
  * @param {Redis} redis - Upstash Redis client
  * @param {string} userId - User's provider ID
  * @param {string} username - User's display name
+ * @param {string} providerId - Streamer's provider ID for stream key
  * @param {Object} rollData - { iq, height, hero, tier, timestamp }
  */
-export async function updateUserStats(redis, userId, username, rollData) {
+export async function updateUserStats(redis, userId, username, providerId, rollData) {
   const { iq, height, hero, tier, timestamp } = rollData;
   const heightInches = heightToInches(height);
   
@@ -98,8 +124,8 @@ export async function updateUserStats(redis, userId, username, rollData) {
     // Save updated stats
     await redis.hset(userKey, updatedStats);
     
-    // Update leaderboards
-    await updateLeaderboards(redis, userId, rollData, updatedStats);
+    // Update stream-specific leaderboards
+    await updateLeaderboards(redis, userId, providerId, rollData, updatedStats);
     
     // Store username lookup for leaderboard display
     await redis.set(`dailyroll:username:${userId}`, username);
@@ -115,33 +141,33 @@ export async function updateUserStats(redis, userId, username, rollData) {
 }
 
 /**
- * Update global leaderboards
+ * Update stream-specific leaderboards
  * @param {Redis} redis - Upstash Redis client
  * @param {string} userId - User's provider ID
+ * @param {string} providerId - Streamer's provider ID for stream key
  * @param {Object} rollData - { iq, height, hero, tier, timestamp }
  * @param {Object} stats - Current user stats after update
  */
-export async function updateLeaderboards(redis, userId, rollData, stats) {
+export async function updateLeaderboards(redis, userId, providerId, rollData, stats) {
   try {
     const { iq, height } = rollData;
     const heightInches = heightToInches(height);
-    const pepegaScore = calculatePepegaScore(stats);
     
-    console.log(`📊 Updating leaderboards for userId=${userId}:`);
+    // Get stream-specific key
+    const streamKey = await getStreamKey(redis, providerId);
+    
+    console.log(`📊 Updating stream leaderboards (${streamKey}) for userId=${userId}:`);
     console.log(`  - IQ: ${iq}`);
     console.log(`  - Height: ${heightInches} inches`);
-    console.log(`  - Total rolls: ${stats.totalRolls}`);
-    console.log(`  - Pepega score: ${pepegaScore}`);
     
-    // Update sorted sets (higher scores = better rank, except pepega where lower = worse)
+    // Update stream-specific sorted sets with current roll data
     const results = await Promise.all([
-      redis.zadd('dailyroll:leaderboard:iq', { score: iq, member: userId.toString() }),
-      redis.zadd('dailyroll:leaderboard:height', { score: heightInches, member: userId.toString() }),
-      redis.zadd('dailyroll:leaderboard:rolls', { score: parseInt(stats.totalRolls), member: userId.toString() }),
-      redis.zadd('dailyroll:leaderboard:pepega', { score: pepegaScore, member: userId.toString() })
+      redis.zadd(`dailyroll:leaderboard:${streamKey}:iq`, { score: iq, member: userId.toString() }),
+      redis.zadd(`dailyroll:leaderboard:${streamKey}:height`, { score: heightInches, member: userId.toString() }),
+      redis.zadd(`dailyroll:leaderboard:${streamKey}:iq_low`, { score: iq, member: userId.toString() }) // For !b500
     ]);
     
-    console.log(`✅ Leaderboards updated, zadd results:`, results);
+    console.log(`✅ Stream leaderboards updated (${streamKey}), zadd results:`, results);
   } catch (error) {
     console.error('❌ Error updating leaderboards:', error);
     // Log and continue
@@ -329,7 +355,7 @@ export function formatLeaderboardResponse(type, entries) {
 }
 
 /**
- * Format pepega leaderboard response for Twitch chat
+ * Format pepega (lowest IQ) leaderboard response for Twitch chat
  * @param {Array} entries - Array of { username, score, rank }
  * @returns {string} Formatted pepega leaderboard string
  */
@@ -340,12 +366,12 @@ export function formatPepegaResponse(entries) {
   
   const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
   
-  // Format entries with pepega score (ironic medals for worst luck)
+  // Format entries with actual IQ scores (ironic medals for lowest IQ)
   const formattedEntries = entries.map((entry, index) => {
-    const scoreDisplay = parseFloat(entry.score).toFixed(2);
+    const iqScore = Math.round(parseFloat(entry.score)); // IQ is the score now
     const medal = medals[index] || '•';
-    return `${medal} ${entry.username} (${scoreDisplay})`;
+    return `${medal} ${entry.username} (${iqScore})`;
   }).join(' | ');
   
-  return `💩 Most Unlucky: ${formattedEntries}`;
+  return `💩 Lowest IQ This Stream: ${formattedEntries}`;
 }

@@ -361,17 +361,17 @@ describe('formatLeaderboardResponse', () => {
 describe('formatPepegaResponse', () => {
   test('formats pepega leaderboard correctly', () => {
     const entries = [
-      { username: 'Unlucky1', score: 0.15, rank: 1 },
-      { username: 'Unlucky2', score: 0.22, rank: 2 },
-      { username: 'Unlucky3', score: 0.28, rank: 3 }
+      { username: 'Unlucky1', score: 15, rank: 1 },
+      { username: 'Unlucky2', score: 22, rank: 2 },
+      { username: 'Unlucky3', score: 28, rank: 3 }
     ];
     
     const result = formatPepegaResponse(entries);
     
-    expect(result).toContain('💩 Most Unlucky');
-    expect(result).toContain('🥇 Unlucky1 (0.15)');
-    expect(result).toContain('🥈 Unlucky2 (0.22)');
-    expect(result).toContain('🥉 Unlucky3 (0.28)');
+    expect(result).toContain('💩 Lowest IQ');
+    expect(result).toContain('🥇 Unlucky1 (15)');
+    expect(result).toContain('🥈 Unlucky2 (22)');
+    expect(result).toContain('🥉 Unlucky3 (28)');
   });
 
   test('handles empty leaderboard', () => {
@@ -380,16 +380,16 @@ describe('formatPepegaResponse', () => {
     expect(result).toContain('No leaderboard data yet');
   });
 
-  test('formats scores to 2 decimal places', () => {
+  test('formats IQ scores as integers', () => {
     const entries = [
-      { username: 'Test1', score: 0.123456, rank: 1 },
-      { username: 'Test2', score: 0.999999, rank: 2 }
+      { username: 'Test1', score: 12.6, rank: 1 },
+      { username: 'Test2', score: 99.8, rank: 2 }
     ];
     
     const result = formatPepegaResponse(entries);
     
-    expect(result).toContain('Test1 (0.12)');
-    expect(result).toContain('Test2 (1.00)');
+    expect(result).toContain('Test1 (13)');
+    expect(result).toContain('Test2 (100)');
   });
 
   test('response stays under 450 character limit', () => {

@@ -220,7 +220,7 @@ export default async function handler(req, res) {
   );
 
   // Update user stats and leaderboards
-  await updateUserStats(redis, userId, username, {
+  await updateUserStats(redis, userId, username, channelProviderId, {
     iq,
     height,
     hero: heroData.hero,

@@ -23,7 +23,7 @@ async function validateAndGetContext(token) {
  * Randomly select a leaderboard type
  */
 function selectRandomLeaderboard() {
-  const types = ['iq', 'height', 'rolls'];
+  const types = ['iq', 'height'];
   return types[Math.floor(Math.random() * types.length)];
 }
 
@@ -73,14 +73,31 @@ export default async function handler(req, res) {
     console.log('=== LEADERBOARD REQUEST ===');
     console.log('Channel:', channelName);
     
+    // Get channel provider ID
+    const channelProviderId = context.channel?.provider_id;
+    if (!channelProviderId) {
+      res.status(400).send('Could not identify channel');
+      return;
+    }
+    
     // Initialize Redis client
     const redis = Redis.fromEnv();
     
-    // Randomly select leaderboard type
-    const type = selectRandomLeaderboard();
-    const leaderboardKey = `dailyroll:leaderboard:${type}`;
+    // Get stream key
+    const { getStreamKey } = await import('../lib/stats.js');
+    const streamKey = await getStreamKey(redis, channelProviderId);
+    
+    // Check query param or randomly select
+    const requestedType = req.query.type;
+    const validTypes = ['iq', 'height'];
+    const type = (requestedType && validTypes.includes(requestedType)) 
+      ? requestedType 
+      : selectRandomLeaderboard();
+    
+    const leaderboardKey = `dailyroll:leaderboard:${streamKey}:${type}`;
     
     console.log('📊 Selected leaderboard:', type);
+    console.log('📊 Stream key:', streamKey);
     console.log('📊 Using key:', leaderboardKey);
     
     // Get top 5
