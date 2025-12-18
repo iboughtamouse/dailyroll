@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vercel dev",
-    "deploy": "vercel"
+    "deploy": "vercel",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@upstash/redis": "^1.28.2"
@@ -14,5 +16,8 @@
     "node": ">=18"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "vitest": "^4.0.16"
+  }
 }

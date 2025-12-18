@@ -1,0 +1,89 @@
+{
+  "tiers": [
+    {
+      "id": 1,
+      "name": "hamster",
+      "threshold": 0.15,
+      "description": "Literally a pet - simple, instinct-based gameplay",
+      "heroes": [
+        "Wrecking Ball",
+        "Bastion",
+        "Winston",
+        "Torbjörn",
+        "Junkrat",
+        "Orisa",
+        "Brigitte",
+        "Hazard",
+        "Tracer",
+        "Sombra"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "unga",
+      "threshold": 0.35,
+      "description": "Unga bunga - low skill floor, hit things hard",
+      "heroes": [
+        "Reinhardt",
+        "Roadhog",
+        "Doomfist",
+        "Junker Queen",
+        "Mauga",
+        "Reaper",
+        "Ramattra",
+        "Genji",
+        "Vendetta"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "normal",
+      "threshold": 0.65,
+      "description": "Functioning human - average skill, normal gameplay",
+      "heroes": [
+        "Soldier: 76",
+        "Cassidy",
+        "Ashe",
+        "Pharah",
+        "Lúcio",
+        "Mei",
+        "D.Va",
+        "Moira",
+        "Symmetra",
+        "Sojourn",
+        "Zarya",
+        "Lifeweaver",
+        "Venture",
+        "Juno",
+        "Hanzo"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "bigbrain",
+      "threshold": 0.85,
+      "description": "Big brain - high skill expression, tactical",
+      "heroes": [
+        "Ana",
+        "Baptiste",
+        "Sigma",
+        "Zenyatta",
+        "Illari",
+        "Echo",
+        "Wuyang"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "overqualified",
+      "threshold": 1.0,
+      "description": "Overqualified - highest skill ceiling, wasted potential",
+      "heroes": [
+        "Mercy",
+        "Kiriko",
+        "Widowmaker",
+        "Freja"
+      ]
+    }
+  ]
+}

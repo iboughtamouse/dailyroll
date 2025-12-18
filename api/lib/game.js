@@ -1,70 +1,21 @@
 // Game logic for Daily Roll
 // Contains hero roster, generators, formatters, and insults
 
-// Overwatch 2 hero roster organized by tiers
-// Bottom 15% - "Literally a pet" (simple, instinct-based gameplay)
-const TIER_HAMSTER = [
-  "Wrecking Ball",
-  "Bastion", 
-  "Winston",
-  "Torbjörn",
-  "Junkrat",
-  "Orisa",
-  "Brigitte",
-  "Hazard",
-  "Tracer",
-  "Sombra",
-];
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-// 16-35% - "Unga bunga" (low skill floor, hit things hard)
-const TIER_UNGA = [
-  "Reinhardt",
-  "Roadhog",
-  "Doomfist",
-  "Junker Queen",
-  "Mauga",
-  "Reaper",
-  "Ramattra",
-  "Genji",
-];
+// Load hero roster from JSON
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const heroData = JSON.parse(readFileSync(join(__dirname, '../data/heroes.json'), 'utf-8'));
 
-// 36-65% - "Functioning human" (average skill, normal gameplay)
-const TIER_NORMAL = [
-  "Soldier: 76",
-  "Cassidy",
-  "Ashe",
-  "Pharah",
-  "Lúcio",
-  "Mei",
-  "D.Va",
-  "Moira",
-  "Symmetra",
-  "Sojourn",
-  "Zarya",
-  "Lifeweaver",
-  "Venture",
-  "Juno",
-  "Hanzo",
-];
-
-// 66-85% - "Big brain" (high skill expression, tactical)
-const TIER_BIGBRAIN = [
-  "Ana",
-  "Baptiste",
-  "Sigma",
-  "Zenyatta",
-  "Illari",
-  "Echo",
-  "Wuyang"
-];
-
-// Top 15% - "Overqualified" (highest skill ceiling, wasted potential)
-const TIER_OVERQUALIFIED = [
-  "Mercy",
-  "Kiriko",
-  "Widowmaker",
-  "Freja"
-];
+// Extract tier arrays from JSON for backwards compatibility
+const TIER_HAMSTER = heroData.tiers.find(t => t.name === 'hamster').heroes;
+const TIER_UNGA = heroData.tiers.find(t => t.name === 'unga').heroes;
+const TIER_NORMAL = heroData.tiers.find(t => t.name === 'normal').heroes;
+const TIER_BIGBRAIN = heroData.tiers.find(t => t.name === 'bigbrain').heroes;
+const TIER_OVERQUALIFIED = heroData.tiers.find(t => t.name === 'overqualified').heroes;
 
 // Insults for users who try to roll too early
 export const INSULTS = [
