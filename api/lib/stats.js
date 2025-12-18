@@ -127,15 +127,21 @@ export async function updateLeaderboards(redis, userId, rollData, stats) {
     const heightInches = heightToInches(height);
     const pepegaScore = calculatePepegaScore(stats);
     
+    console.log(`📊 Updating leaderboards for userId=${userId}:`);
+    console.log(`  - IQ: ${iq}`);
+    console.log(`  - Height: ${heightInches} inches`);
+    console.log(`  - Total rolls: ${stats.totalRolls}`);
+    console.log(`  - Pepega score: ${pepegaScore}`);
+    
     // Update sorted sets (higher scores = better rank, except pepega where lower = worse)
-    await Promise.all([
-      redis.zadd('dailyroll:leaderboard:iq', { score: iq, member: userId }),
-      redis.zadd('dailyroll:leaderboard:height', { score: heightInches, member: userId }),
-      redis.zadd('dailyroll:leaderboard:rolls', { score: stats.totalRolls, member: userId }),
-      redis.zadd('dailyroll:leaderboard:pepega', { score: pepegaScore, member: userId })
+    const results = await Promise.all([
+      redis.zadd('dailyroll:leaderboard:iq', { score: iq, member: userId.toString() }),
+      redis.zadd('dailyroll:leaderboard:height', { score: heightInches, member: userId.toString() }),
+      redis.zadd('dailyroll:leaderboard:rolls', { score: parseInt(stats.totalRolls), member: userId.toString() }),
+      redis.zadd('dailyroll:leaderboard:pepega', { score: pepegaScore, member: userId.toString() })
     ]);
     
-    console.log(`📊 Leaderboards updated for ${userId}`);
+    console.log(`✅ Leaderboards updated, zadd results:`, results);
   } catch (error) {
     console.error('❌ Error updating leaderboards:', error);
     // Log and continue
@@ -244,12 +250,17 @@ export function formatStatsResponse(username, stats, ranks) {
  */
 export async function getTopN(redis, leaderboardKey, n = 5, reverse = true) {
   try {
+    console.log(`🔍 Getting top ${n} from ${leaderboardKey}, reverse=${reverse}`);
+    
     // Get top N user IDs with scores
     const results = reverse 
       ? await redis.zrevrange(leaderboardKey, 0, n - 1, { withScores: true })
       : await redis.zrange(leaderboardKey, 0, n - 1, { withScores: true });
     
+    console.log(`📊 Redis returned ${results ? results.length : 0} items:`, results);
+    
     if (!results || results.length === 0) {
+      console.log('⚠️ No results found');
       return [];
     }
     

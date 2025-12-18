@@ -81,9 +81,12 @@ export default async function handler(req, res) {
     const leaderboardKey = `dailyroll:leaderboard:${type}`;
     
     console.log('📊 Selected leaderboard:', type);
+    console.log('📊 Using key:', leaderboardKey);
     
     // Get top 5
     const entries = await getTopN(redis, leaderboardKey, 5, true);
+    
+    console.log('📊 getTopN returned:', entries);
     
     console.log(`✅ Retrieved ${entries.length} entries`);
     

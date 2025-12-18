@@ -67,8 +67,12 @@ export default async function handler(req, res) {
     // Initialize Redis client
     const redis = Redis.fromEnv();
     
+    console.log('📊 Fetching bottom 5 pepega scores...');
+    
     // Get bottom 5 (lowest pepega scores)
     const entries = await getTopN(redis, 'dailyroll:leaderboard:pepega', 5, false);
+    
+    console.log('📊 getTopN returned:', entries);
     
     console.log(`✅ Retrieved ${entries.length} pepega entries`);
     
