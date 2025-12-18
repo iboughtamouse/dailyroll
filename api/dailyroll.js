@@ -60,6 +60,7 @@ export default async function handler(req, res) {
 
   if (!isAugust) {
     res.status(400).send("Get out of my fucking API you shitter");
+    return;
   }
 
   // Validate request and get context

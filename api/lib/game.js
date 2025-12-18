@@ -10,6 +10,22 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const heroData = JSON.parse(readFileSync(join(__dirname, '../data/heroes.json'), 'utf-8'));
 
+// Validate JSON structure on load
+if (!Array.isArray(heroData?.tiers)) {
+  throw new Error('heroes.json is malformed: missing or invalid tiers array');
+}
+
+const requiredTiers = ['hamster', 'unga', 'normal', 'bigbrain', 'overqualified'];
+for (const tierName of requiredTiers) {
+  const tier = heroData.tiers.find(t => t?.name === tierName);
+  if (!tier) {
+    throw new Error(`heroes.json is malformed: missing tier "${tierName}"`);
+  }
+  if (!Array.isArray(tier.heroes) || tier.heroes.length === 0) {
+    throw new Error(`heroes.json is malformed: tier "${tierName}" has no heroes`);
+  }
+}
+
 // Extract tier arrays from JSON for backwards compatibility
 const TIER_HAMSTER = heroData.tiers.find(t => t.name === 'hamster').heroes;
 const TIER_UNGA = heroData.tiers.find(t => t.name === 'unga').heroes;
