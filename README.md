@@ -126,10 +126,11 @@ vercel
 
 **Leaderboard Commands:**
 - **Command**: `!t500` (or `!top500`, `!leaderboard`)
-- **Response**: `$(customapi https://your-project.vercel.app/api/stats/leaderboard)`
+- **Response**: `$(customapi https://your-project.vercel.app/api/stats/leaderboard?type=$(query))`
 - **Cooldown**: 30 seconds globally (recommended)
+- **Usage**: `!t500` (random), `!t500 iq`, `!t500 height`
 
-**Pepega Leaderboard Commands:**
+**Bottom Leaderboard Commands:**
 - **Command**: `!b500` (or `!bottom500`, `!pepega`)
 - **Response**: `$(customapi https://your-project.vercel.app/api/stats/pepega)`
 - **Cooldown**: 30 seconds globally (recommended)
@@ -228,9 +229,12 @@ Required environment variables in Vercel:
 ### Leaderboards (`!t500`, `!b500`)
 
 1. User types leaderboard command in Twitch chat
-2. **!t500**: API randomly selects IQ, height, or rolls leaderboard
-3. **!b500**: API retrieves bottom 5 pepega scores (worst luck)
-4. Returns formatted top/bottom 5 with usernames and scores
+2. **!t500**: Shows top 5 for current stream
+   - Random selection (no args): picks IQ or height
+   - Specific: `!t500 iq` or `!t500 height`
+3. **!b500**: Shows bottom 5 IQ scores from current stream
+4. Leaderboards reset each stream (based on Twitch stream start time)
+5. Returns formatted top/bottom 5 with medals (🥇🥈🥉) and scores
 
 ## Tech Stack
 
