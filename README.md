@@ -72,6 +72,7 @@ cd dailyroll-api
    - `UPSTASH_REDIS_REST_TOKEN` = your Upstash token
    - `TWITCH_CLIENT_ID` = your Twitch Client ID
    - `TWITCH_CLIENT_SECRET` = your Twitch Client Secret
+   - `STREAMER_NAME` = your Twitch display name (uppercase, e.g., `AUGUST`)
 4. Click "Deploy"
 
 ##### Option B: Using Vercel CLI
