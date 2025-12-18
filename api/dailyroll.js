@@ -1,15 +1,15 @@
 // Daily Roll API for Fossabot (Redis Version)
 // Returns random IQ, height, and hero with per-stream cooldown (when live) or 24-hour cooldown (when offline)
 
-import { Redis } from '@upstash/redis';
-import { getStreamStartTime } from './lib/twitch.js';
-import { 
-  generateIQ, 
-  generateHeight, 
-  generateHero, 
-  getRandomInsult, 
-  formatRollResponse 
-} from './lib/game.js';
+import { Redis } from "@upstash/redis";
+import { getStreamStartTime } from "./lib/twitch.js";
+import {
+  generateIQ,
+  generateHeight,
+  generateHero,
+  getRandomInsult,
+  formatRollResponse,
+} from "./lib/game.js";
 
 // Redis expiration for user data
 const REDIS_EXPIRATION = 48 * 60 * 60; // 48 hours in seconds
@@ -18,12 +18,14 @@ const REDIS_EXPIRATION = 48 * 60 * 60; // 48 hours in seconds
  * Validate the Fossabot request and get context
  */
 async function validateAndGetContext(token) {
-  const response = await fetch(`https://api.fossabot.com/v2/customapi/context/${token}`);
-  
+  const response = await fetch(
+    `https://api.fossabot.com/v2/customapi/context/${token}`
+  );
+
   if (!response.ok) {
-    return { valid: false, error: 'Invalid or expired token' };
+    return { valid: false, error: "Invalid or expired token" };
   }
-  
+
   const data = await response.json();
   return { valid: true, data };
 }
@@ -33,60 +35,66 @@ async function validateAndGetContext(token) {
  */
 export default async function handler(req, res) {
   // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
   // Handle OPTIONS request
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     res.status(200).end();
     return;
   }
-  
+
   // Get the Fossabot token from headers
-  const token = req.headers['x-fossabot-customapitoken'];
-  
+  const token = req.headers["x-fossabot-customapitoken"];
+
   // Get twitch channel name
-  const isAugust = `${req.headers['x-fossabot-channeldisplayname']}`.toUpperCase() === "AUGUST"
-  
+  const isAugust =
+    `${req.headers["x-fossabot-channeldisplayname"]}`.toUpperCase() ===
+    process.env.STREAMER_NAME;
+
   if (!token) {
-    res.status(400).send('Missing Fossabot token');
+    res.status(400).send("Missing Fossabot token");
     return;
   }
 
   if (!isAugust) {
-    res.status(400).send('Get out of my fucking API you shitter')
+    res.status(400).send("Get out of my fucking API you shitter");
+    return;
   }
-  
+
   // Validate request and get context
   const validation = await validateAndGetContext(token);
-  
+
   if (!validation.valid) {
     res.status(400).send(validation.error);
     return;
   }
-  
+
   const context = validation.data;
-  
+
   // Extract user info
-  const username = context.message?.user?.display_name || context.message?.user?.login || 'Unknown';
+  const username =
+    context.message?.user?.display_name ||
+    context.message?.user?.login ||
+    "Unknown";
   const userId = context.message?.user?.provider_id;
   const channelProviderId = context.channel?.provider_id;
   const isLive = context.channel?.is_live || false;
-  
+
   if (!userId) {
-    res.status(400).send('Could not identify user');
+    res.status(400).send("Could not identify user");
     return;
   }
-  
+
   if (!channelProviderId) {
-    res.status(400).send('Could not identify channel');
+    res.status(400).send("Could not identify channel");
     return;
   }
-  
+
   // Initialize Redis client
   const redis = Redis.fromEnv();
-  
+
   // Get actual stream start time from Twitch API if live
   let streamStartTime = null;
   if (isLive) {
@@ -96,47 +104,56 @@ export default async function handler(req, res) {
         streamStartTime = new Date(startedAt).getTime();
       }
     } catch (error) {
-      console.error('Error fetching stream start time:', error);
+      console.error("Error fetching stream start time:", error);
       // Continue without stream start time - will fall back to 24-hour cooldown
     }
   }
-  
+
   // Check if user has rolled before
   const now = Date.now();
   const userRollKey = `dailyroll:${userId}`;
   const userData = await redis.get(userRollKey);
-  
+
   // Log current state for monitoring
-  console.log('=== DAILYROLL REQUEST ===');
-  console.log('User:', username);
-  console.log('Current time:', new Date(now).toISOString());
-  console.log('Is live:', isLive);
-  console.log('Stream start time:', streamStartTime ? new Date(streamStartTime).toISOString() : 'N/A');
-  
+  console.log("=== DAILYROLL REQUEST ===");
+  console.log("User:", username);
+  console.log("Current time:", new Date(now).toISOString());
+  console.log("Is live:", isLive);
+  console.log(
+    "Stream start time:",
+    streamStartTime ? new Date(streamStartTime).toISOString() : "N/A"
+  );
+
   if (streamStartTime) {
-    const minutesSinceStreamStart = Math.round((now - streamStartTime) / 1000 / 60);
-    console.log('Minutes since stream start:', minutesSinceStreamStart);
+    const minutesSinceStreamStart = Math.round(
+      (now - streamStartTime) / 1000 / 60
+    );
+    console.log("Minutes since stream start:", minutesSinceStreamStart);
   }
-  
+
   if (userData && userData.lastRoll) {
-    console.log('Last roll:', new Date(userData.lastRoll).toISOString());
-    const minutesSinceLastRoll = Math.round((now - userData.lastRoll) / 1000 / 60);
-    console.log('Minutes since last roll:', minutesSinceLastRoll);
-    console.log('Current spam count:', userData.spamCount || 0);
+    console.log("Last roll:", new Date(userData.lastRoll).toISOString());
+    const minutesSinceLastRoll = Math.round(
+      (now - userData.lastRoll) / 1000 / 60
+    );
+    console.log("Minutes since last roll:", minutesSinceLastRoll);
+    console.log("Current spam count:", userData.spamCount || 0);
   } else {
-    console.log('No previous roll data');
+    console.log("No previous roll data");
   }
-  
+
   // Determine if user is in cooldown
   let inCooldown = false;
-  let cooldownReason = '';
-  
+  let cooldownReason = "";
+
   if (userData && userData.lastRoll) {
     if (isLive && streamStartTime) {
       // LIVE: Check if they rolled during current stream
       inCooldown = userData.lastRoll > streamStartTime;
-      cooldownReason = inCooldown 
-        ? `Rolled during current stream (${new Date(userData.lastRoll).toISOString()} > ${new Date(streamStartTime).toISOString()})`
+      cooldownReason = inCooldown
+        ? `Rolled during current stream (${new Date(
+            userData.lastRoll
+          ).toISOString()} > ${new Date(streamStartTime).toISOString()})`
         : `Last roll was before this stream started`;
     } else {
       // OFFLINE or couldn't get stream start time: Use 24-hour cooldown
@@ -144,70 +161,85 @@ export default async function handler(req, res) {
       const timeSinceLastRoll = now - userData.lastRoll;
       inCooldown = timeSinceLastRoll < OFFLINE_COOLDOWN_MS;
       cooldownReason = inCooldown
-        ? `Within 24-hour offline cooldown (${Math.round(timeSinceLastRoll / 1000 / 60)} minutes ago)`
+        ? `Within 24-hour offline cooldown (${Math.round(
+            timeSinceLastRoll / 1000 / 60
+          )} minutes ago)`
         : `24-hour cooldown expired`;
     }
   }
-  
-  console.log('In cooldown:', inCooldown);
-  console.log('Reason:', cooldownReason);
-  console.log('========================');
-  
+
+  console.log("In cooldown:", inCooldown);
+  console.log("Reason:", cooldownReason);
+  console.log("========================");
+
   if (inCooldown) {
     // User is in cooldown - track spam and respond
     const spamCount = (userData.spamCount || 0) + 1;
 
-    console.log('❌ Cooldown active - spam count:', spamCount);
+    console.log("❌ Cooldown active - spam count:", spamCount);
 
     // Update user data with incremented spam count (keep lastRoll)
-    await redis.set(userRollKey, {
-      lastRoll: userData.lastRoll,
-      spamCount: spamCount
-    }, {
-      ex: REDIS_EXPIRATION
-    });
+    await redis.set(
+      userRollKey,
+      {
+        lastRoll: userData.lastRoll,
+        spamCount: spamCount,
+      },
+      {
+        ex: REDIS_EXPIRATION,
+      }
+    );
 
     const insult = getRandomInsult();
 
     // If they've tried 2+ times, issue a timeout command (return 'timeout ...' so Fossabot will prefix with '/')
     if (spamCount >= 2) {
-      console.log('⏱️ Timeout triggered (spam count >= 2)');
+      console.log("⏱️ Timeout triggered (spam count >= 2)");
       const timeoutMessage = `timeout ${username} 60s ${insult}`;
-      console.log('📤 RESPONSE (TIMEOUT):', JSON.stringify(timeoutMessage));
-      console.log('📤 RESPONSE LENGTH:', timeoutMessage.length);
-      console.log('📤 RESPONSE BYTES:', Buffer.from(timeoutMessage).toString('hex'));
+      console.log("📤 RESPONSE (TIMEOUT):", JSON.stringify(timeoutMessage));
+      console.log("📤 RESPONSE LENGTH:", timeoutMessage.length);
+      console.log(
+        "📤 RESPONSE BYTES:",
+        Buffer.from(timeoutMessage).toString("hex")
+      );
       res.status(200).send(timeoutMessage);
       return;
     }
 
     // Otherwise respond with an emote-style message so Fossabot will output '/me ...'
     const insultResponse = `me ${insult}`;
-    console.log('💬 Sending insult (spam count < 2)');
-    console.log('📤 RESPONSE (INSULT):', JSON.stringify(insultResponse));
-    console.log('📤 RESPONSE LENGTH:', insultResponse.length);
+    console.log("💬 Sending insult (spam count < 2)");
+    console.log("📤 RESPONSE (INSULT):", JSON.stringify(insultResponse));
+    console.log("📤 RESPONSE LENGTH:", insultResponse.length);
     res.status(200).send(insultResponse);
     return;
   }
-  
+
   // Generate new roll
   const iq = generateIQ();
   const height = generateHeight();
   const heroData = generateHero(iq, height);
-  
-  console.log('✅ Successful roll - generating new stats');
-  console.log(`Generated: IQ ${iq}, Height ${height}, Hero ${heroData.hero} (Tier ${heroData.tier})`);
-  
+
+  console.log("✅ Successful roll - generating new stats");
+  console.log(
+    `Generated: IQ ${iq}, Height ${height}, Hero ${heroData.hero} (Tier ${heroData.tier})`
+  );
+
   // Store timestamp and reset spam count with 48-hour expiration
-  await redis.set(userRollKey, {
-    lastRoll: now,
-    spamCount: 0
-  }, {
-    ex: REDIS_EXPIRATION
-  });
-  
+  await redis.set(
+    userRollKey,
+    {
+      lastRoll: now,
+      spamCount: 0,
+    },
+    {
+      ex: REDIS_EXPIRATION,
+    }
+  );
+
   // Format and return response
   let response = `me ${formatRollResponse(username, iq, height, heroData)}`;
-  console.log('📤 RESPONSE (SUCCESS):', JSON.stringify(response));
-  console.log('📤 RESPONSE LENGTH:', response.length);
+  console.log("📤 RESPONSE (SUCCESS):", JSON.stringify(response));
+  console.log("📤 RESPONSE LENGTH:", response.length);
   res.status(200).send(response);
 }

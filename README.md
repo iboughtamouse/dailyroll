@@ -35,8 +35,8 @@ TestUser: 156 IQ, 7'2" tall - you've got a brain, use it. Play Widowmaker.
 #### 1. Fork/Clone This Repository
 
 ```bash
-git clone https://github.com/yourusername/dailyroll-api.git
-cd dailyroll-api
+git clone https://github.com/yourusername/dailyroll.git
+cd dailyroll
 ```
 
 #### 2. Create Upstash Redis Database
@@ -72,6 +72,7 @@ cd dailyroll-api
    - `UPSTASH_REDIS_REST_TOKEN` = your Upstash token
    - `TWITCH_CLIENT_ID` = your Twitch Client ID
    - `TWITCH_CLIENT_SECRET` = your Twitch Client Secret
+   - `STREAMER_NAME` = your Twitch display name (uppercase, e.g., `AUGUST`)
 4. Click "Deploy"
 
 ##### Option B: Using Vercel CLI
@@ -123,7 +124,14 @@ export const INSULTS = [
 
 ### Update Hero Roster
 
-Edit the `HEROES` array in `api/lib/game.js` to add/remove heroes.
+Edit `api/data/heroes.json` to add/remove heroes. The roster is organized by tiers:
+- **Tier 1 (hamster)**: Simple, instinct-based heroes
+- **Tier 2 (unga)**: Low skill floor, hit things hard
+- **Tier 3 (normal)**: Average skill, normal gameplay
+- **Tier 4 (bigbrain)**: High skill expression, tactical
+- **Tier 5 (overqualified)**: Highest skill ceiling
+
+Simply add hero names to the `heroes` array of the appropriate tier and deploy.
 
 ### Adjust Cache Duration
 
@@ -143,6 +151,7 @@ Required environment variables in Vercel:
 | `UPSTASH_REDIS_REST_TOKEN` | Your Upstash Redis REST token | `AXXXxxxXXX...` |
 | `TWITCH_CLIENT_ID` | Your Twitch application Client ID | `abc123xyz...` |
 | `TWITCH_CLIENT_SECRET` | Your Twitch application Client Secret | `secret123...` |
+| `STREAMER_NAME` | Your Twitch display name (uppercase) | `AUGUST` |
 
 ## How It Works
 
@@ -170,17 +179,43 @@ Required environment variables in Vercel:
 
 ## Development
 
-### Local Testing
+### Setup
 
 ```bash
 npm install
-vercel env pull .env.local
+cp .env.example .env
+# Edit .env with your credentials
+```
+
+### Local Testing
+
+```bash
+vercel env pull .env.local  # Pull from Vercel (if already deployed)
 vercel dev
 ```
 
-### Testing the API
+### Running Tests
 
-You cannot test this API directly in a browser because it requires Fossabot headers. You must test through a Fossabot command.
+The project includes a test suite using Vitest:
+
+```bash
+# Run tests in watch mode (reruns on file changes)
+npm test
+
+# Run tests once (for CI/scripts)
+npm run test:run
+```
+
+Tests cover:
+- IQ and height generation
+- Tier assignment logic
+- Hero selection
+- Response formatting
+- Insult randomization
+
+### Testing the API Endpoint
+
+You cannot test this API directly in a browser because it requires Fossabot headers. You must test through a Fossabot command in Twitch chat.
 
 ## Troubleshooting
 
