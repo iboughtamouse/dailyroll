@@ -9,17 +9,43 @@ A serverless API for Twitch chat that generates random "daily roll" stats with s
   - When stream is **LIVE**: One roll per stream session
   - When stream is **OFFLINE**: 24-hour cooldown
   - Spam protection with insults for repeated attempts
+- **Stats Tracking**: Automatically tracks each user's roll history
+  - Total rolls, current stats, peak IQ/height
+  - Tier distribution (hamster, unga, normal, bigbrain, overqualified)
+  - "Pepega score" - composite luck rating (0-1 scale)
+- **Leaderboards**: Compare with other users
+  - Top 5 by IQ, height, or total rolls
+  - Bottom 5 by pepega score (worst luck)
+  - Personal ranks visible in stats
 - **Twitch API Integration**: Accurately detects stream start time for per-stream cooldowns
 - **Fossabot Integration**: Validates requests and extracts user information
-- **Persistent Storage**: Uses Upstash Redis for reliable cooldown tracking
+- **Persistent Storage**: Uses Upstash Redis for reliable cooldown and stats tracking
 - **Multiple Formats**: Randomized response styles for variety
 
 ## Example Output
+
+### Daily Roll (`!dailyroll`)
 
 ```
 TestUser rolled 45 IQ and 2'4" height - literal hamster brain. Play Wrecking Ball.
 142 IQ and 6'3" for TestUser. Big weapon, simple plan. Reinhardt awaits. HONOR!! JUSTICE!! CHUNGUS FUCKING CHUNGUS!
 TestUser: 156 IQ, 7'2" tall - you've got a brain, use it. Play Widowmaker.
+```
+
+### Personal Stats (`!stats`)
+
+```
+august: 42 rolls | Today: 142 IQ, 6'3", Reinhardt | Peak: 189 IQ, 8'5" | Rank: #10 IQ, #15 height, #200 pepega
+newbie: No rolls yet! Type !dailyroll to get started.
+```
+
+### Leaderboards (`!t500`, `!b500`)
+
+```
+🧠 Highest IQ: 1) BrainGod (198) 2) SmartGuy (187) 3) NotBad (156) 4) Average (142) 5) Normal (130)
+📏 Tallest: 1) TallBoi (9'11") 2) BigGuy (8'5") 3) MediumBoi (6'3") 4) ShortKing (5'6") 5) Smol (4'2")
+🎲 Most Rolls: 1) Addict (500) 2) Regular (250) 3) Active (150) 4) Casual (75) 5) NewGuy (10)
+💩 Most Pepega: 1) Unlucky1 (0.15) 2) Unlucky2 (0.22) 3) BadLuck (0.28) 4) Pepega (0.31) 5) Unfortunate (0.35)
 ```
 
 ## Deployment
@@ -83,13 +109,32 @@ vercel
 # Follow prompts and add environment variables when asked
 ```
 
-#### 5. Configure Fossabot
+#### 5. Configure Fossabot Commands
 
 1. Go to https://fossabot.com
 2. Navigate to: Commands → Custom Commands → New Command
-3. **Command**: `!dailyroll`
-4. **Response**: `$(customapi https://your-project.vercel.app/api/dailyroll)`
-5. Save and test in Twitch chat!
+
+**Daily Roll Command:**
+- **Command**: `!dailyroll`
+- **Response**: `$(customapi https://your-project.vercel.app/api/dailyroll)`
+- **Cooldown**: None (API handles cooldowns)
+
+**Personal Stats Command:**
+- **Command**: `!stats`
+- **Response**: `$(customapi https://your-project.vercel.app/api/stats/me)`
+- **Cooldown**: 10 seconds per user (recommended)
+
+**Leaderboard Commands:**
+- **Command**: `!t500` (or `!top500`, `!leaderboard`)
+- **Response**: `$(customapi https://your-project.vercel.app/api/stats/leaderboard)`
+- **Cooldown**: 30 seconds globally (recommended)
+
+**Pepega Leaderboard Commands:**
+- **Command**: `!b500` (or `!bottom500`, `!pepega`)
+- **Response**: `$(customapi https://your-project.vercel.app/api/stats/pepega)`
+- **Cooldown**: 30 seconds globally (recommended)
+
+Save and test in Twitch chat!
 
 ## Configuration
 
@@ -155,6 +200,8 @@ Required environment variables in Vercel:
 
 ## How It Works
 
+### Daily Roll (`!dailyroll`)
+
 1. User types `!dailyroll` in Twitch chat
 2. Fossabot calls your API endpoint with validation token
 3. API validates request with Fossabot to get user and channel info
@@ -167,7 +214,23 @@ Required environment variables in Vercel:
    - If within 24 hours of last roll → return insult
    - If 24+ hours since last roll → generate new roll
 8. Spam protection: If user tries 2+ times during cooldown, timeout for 60 seconds
-9. Return formatted response to chat
+9. Generate stats and update user's Redis hash with roll data
+10. Update 4 leaderboards (IQ, height, rolls, pepega score)
+11. Return formatted response to chat
+
+### Personal Stats (`!stats`)
+
+1. User types `!stats` in Twitch chat
+2. API retrieves user's stats from Redis hash
+3. Calculates user's rank across all leaderboards
+4. Returns formatted stats: total rolls, current stats, peak stats, ranks
+
+### Leaderboards (`!t500`, `!b500`)
+
+1. User types leaderboard command in Twitch chat
+2. **!t500**: API randomly selects IQ, height, or rolls leaderboard
+3. **!b500**: API retrieves bottom 5 pepega scores (worst luck)
+4. Returns formatted top/bottom 5 with usernames and scores
 
 ## Tech Stack
 
@@ -212,6 +275,9 @@ Tests cover:
 - Hero selection
 - Response formatting
 - Insult randomization
+- Stats tracking and pepega score calculation
+- Leaderboard formatting
+- Character limit compliance (< 450 chars for Twitch safety)
 
 ### Testing the API Endpoint
 
@@ -250,11 +316,38 @@ MIT
 
 Pull requests welcome! Feel free to add features, fix bugs, or improve documentation.
 
+## Deployment Notes
+
+### First-Time Deployment
+
+If you're deploying stats for the first time or migrating from an older version without stats:
+
+1. Go to your Upstash Redis dashboard
+2. Run `FLUSHDB` in the CLI to clear old data
+3. Deploy to Vercel
+4. Configure all Fossabot commands
+5. Test in Twitch chat
+
+This ensures all users start with the new stats schema.
+
+### Redis Schema
+
+The API uses the following Redis structure:
+- **User data**: `dailyroll:user:{userId}` (hash with 20+ fields)
+- **Username lookup**: `dailyroll:username:{userId}` (string)
+- **Leaderboards**: `dailyroll:leaderboard:{iq|height|rolls|pepega}` (sorted sets)
+- **Stream cache**: `stream:{providerId}:start_time` (string, 5min TTL)
+- **Twitch token**: `twitch:app_token` (string, 50d TTL)
+
+See [docs/architecture/data-model.md](docs/architecture/data-model.md) for detailed schema documentation.
+
 ## Possible Enhancements
 
-- [ ] Leaderboards (highest IQ, tallest height, etc.)
+- [x] Leaderboards (highest IQ, tallest height, etc.)
+- [x] Stats tracking and analytics
 - [ ] Special weekend bonuses
 - [ ] Per-hero custom response messages
-- [ ] Stats tracking and analytics
 - [ ] Role-based special rolls (subs, mods)
 - [ ] Multi-language support
+- [ ] Historical roll graphs/charts
+- [ ] Monthly/seasonal stat resets
