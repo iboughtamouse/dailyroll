@@ -121,59 +121,108 @@ export function getRandomInsult() {
 }
 
 /**
+ * Get extreme value reactions for special rolls
+ */
+function getExtremeReaction(iq, height) {
+  const reactions = [];
+  
+  // Parse height to inches for comparison
+  const [feet, inches] = height.split("'").map(s => parseInt(s.replace('"', '')));
+  const totalInches = (feet * 12) + inches;
+  
+  // IQ reactions
+  if (iq >= 190) reactions.push('GIGABRAIN 🧠');
+  else if (iq < 50) reactions.push('pure chaos energy 🐹');
+  
+  // Height reactions
+  if (totalInches >= 108) reactions.push('ABSOLUTE UNIT 🏔️');  // 9'+
+  else if (totalInches < 24) reactions.push('smol bean 🐁');  // <2'
+  
+  return reactions.length > 0 ? ' ' + reactions.join(' ') : '';
+}
+
+/**
  * Format the daily roll response with tier-specific flavor text
  */
-export function formatRollResponse(username, iq, height, heroData) {
-  const { hero, tier, tierName } = heroData;
+export function formatRollResponse(username, iq, height, heroData, isPersonalBest = false) {
+  const { hero, tier, tierName} = heroData;
+  const extreme = getExtremeReaction(iq, height);
   
-  // Tier 1: "Literally a pet" 
-  const hamsterFormats = [
-    `${username} rolled ${iq} IQ and ${height} height - literal hamster brain. Play ${hero}.`,
-    `${username}: ${iq} IQ, ${height} tall. You are ${hero === "Torbjörn" ? "the turret" : "basically a pet"}. Play ${hero}.`,
-    `IQ ${iq}, Height ${height} - ${username} operates on pure instinct. ${hero} it is.`,
-    `${username} got ${iq} IQ and ${height}. Reject humanity, return to ${hero}.`
+  // Fortune-style templates (like sr2)
+  const fortuneTemplates = [
+    `🎲 ${username} rolled ${iq} IQ, ${height} - {flavor}. Play ${hero}.`,
+    `✨ The dice speak: ${username} got ${iq} IQ and ${height}. {flavor}. ${hero} awaits.`,
+    `🌟 ${username}: ${iq} IQ, ${height} tall - {flavor}. Time for ${hero}.`,
+    `🎴 Destiny reveals: ${iq} IQ, ${height} for ${username}. {flavor}. Play ${hero}.`,
+    `⭐ ${username} manifested ${iq} IQ and ${height} - {flavor}. ${hero} it is.`,
+    `🔮 The universe whispers: ${username} rolled ${iq} IQ, ${height}. {flavor}. ${hero} ready.`,
+    `💫 ${username}: IQ ${iq}, Height ${height} - {flavor}. ${hero} calls to you.`,
+    `🎯 RNG gods decree: ${username} gets ${iq} IQ and ${height}. {flavor}. Play ${hero}.`
   ];
   
-  // Tier 2: "Unga bunga"
-  const ungaFormats = [
-    `${username} rolled ${iq} IQ, ${height} - unga bunga energy. Play ${hero}.`,
-    `${iq} IQ and ${height} for ${username}. Big weapon, simple plan. ${hero} awaits.`,
-    `${username}: ${iq} IQ, ${height} tall - you see enemy, you hit enemy. Play ${hero}.`,
-    `IQ ${iq}, Height ${height} - ${username} thinks with their fists. Time for ${hero}.`
-  ].map((response) => response + (hero === "Reinhardt" ? " HONOR!! JUSTICE!! CHUNGUS FUCKING CHUNGUS!" : ""));
-  
-  // Tier 3: "Functioning human"
-  const normalFormats = [
-    `${username} rolled ${iq} IQ and ${height} - you're fine. Play ${hero}.`,
-    `${username}: IQ ${iq}, ${height} tall. Perfectly average. ${hero} suits you.`,
-    `${iq} IQ, ${height} for ${username} - congrats on being unremarkable. Play ${hero}.`,
-    `${username} got ${iq} IQ and ${height}. Nothing special, play ${hero}.`
-  ];
-  
-  // Tier 4: "Big brain"
-  const bigbrainFormats = [
-    `${username} rolled ${iq} IQ, ${height} - actually has a plan. Play ${hero}.`,
-    `IQ ${iq} and ${height} for ${username}. High skill expression time: ${hero}.`,
-    `${username}: ${iq} IQ, ${height} tall - you've got a brain, use it. Play ${hero}.`,
-    `${iq} IQ, ${height} - ${username} thinks before shooting. ${hero} ready.`
-  ];
-  
-  // Tier 5: "Overqualified"
-  const overqualifiedFormats = [
-    `${username} rolled ${iq} IQ and ${height} - overqualified. Play ${hero} and carry these idiots.`,
-    `IQ ${iq}, Height ${height} - ${username} is wasting their time here. Play ${hero}.`,
-    `${username}: ${iq} IQ, ${height} tall. Why are you even here? Play ${hero}.`,
-    `${iq} IQ, ${height} for ${username} - too good for this. Like ${hero}. You devilish beast. You sly motherfucker.`
-  ];
-  
-  const formatsByTier = {
-    1: hamsterFormats,
-    2: ungaFormats,
-    3: normalFormats,
-    4: bigbrainFormats,
-    5: overqualifiedFormats
+  // Tier-specific flavor text
+  const flavorByTier = {
+    1: [  // Hamster tier
+      'literal hamster brain',
+      'pure instinct mode',
+      'reject humanity',
+      hero === "Torbjörn" ? "you ARE the turret" : "basically a pet",
+      'all vibes no thoughts',
+      'consciousness optional'
+    ],
+    2: [  // Unga tier
+      'unga bunga energy',
+      'big weapon, simple plan',
+      'you see enemy, you hit enemy',
+      'thinks with their fists',
+      'pure aggression',
+      'monkey brain activated'
+    ],
+    3: [  // Normal tier
+      'perfectly average',
+      "you're fine",
+      'functioning human energy',
+      'unremarkable but reliable',
+      'nothing special',
+      'mediocrity achieved'
+    ],
+    4: [  // Bigbrain tier
+      'actually has a plan',
+      "you've got a brain, use it",
+      'high skill expression',
+      'thinks before shooting',
+      'galaxy brain time',
+      'tactical genius incoming'
+    ],
+    5: [  // Overqualified tier
+      'overqualified for this lobby',
+      'wasting your talent here',
+      'too good for this',
+      'absolute legend energy',
+      'devilish beast mode',
+      'smurf energy'
+    ]
   };
   
-  const formats = formatsByTier[tier];
-  return formats[Math.floor(Math.random() * formats.length)];
+  // Pick random template and flavor
+  const template = fortuneTemplates[Math.floor(Math.random() * fortuneTemplates.length)];
+  const flavors = flavorByTier[tier];
+  const flavor = flavors[Math.floor(Math.random() * flavors.length)];
+  
+  let response = template.replace('{flavor}', flavor);
+  
+  // Add Reinhardt special (the CHUNGUS)
+  if (hero === "Reinhardt" && tier === 2) {
+    response += " HONOR!! JUSTICE!! CHUNGUS FUCKING CHUNGUS!";
+  }
+  
+  // Add extreme reactions
+  response += extreme;
+  
+  // Add personal best celebration
+  if (isPersonalBest) {
+    response += ' 🎉 New personal best!';
+  }
+  
+  return response;
 }

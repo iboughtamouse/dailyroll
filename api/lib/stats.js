@@ -225,19 +225,19 @@ export function formatStatsResponse(username, stats, ranks) {
     return `${username}: No rolls yet! Type !roll to get started.`;
   }
   
-  // Build response parts
-  const rollCount = `${stats.totalRolls} roll${stats.totalRolls === 1 ? '' : 's'}`;
-  const current = `Today: ${stats.currentIQ} IQ, ${stats.currentHeight}, ${stats.currentHero}`;
-  const peak = `Peak: ${stats.highestIQ} IQ, ${stats.tallestHeight}`;
+  // Build response parts with more personality
+  const rollCount = `${stats.totalRolls} attempt${stats.totalRolls === 1 ? '' : 's'} 🎲`;
+  const current = `Latest: ${stats.currentIQ} IQ, ${stats.currentHeight}, ${stats.currentHero}`;
+  const peak = `Peak: ${stats.highestIQ} IQ 🧠, ${stats.tallestHeight} 📏`;
   
   // Build ranks string (only show ranks that exist)
   const rankParts = [];
   if (ranks.iqRank) rankParts.push(`#${ranks.iqRank} IQ`);
   if (ranks.heightRank) rankParts.push(`#${ranks.heightRank} height`);
   if (ranks.pepegaRank) rankParts.push(`#${ranks.pepegaRank} pepega`);
-  const rankString = rankParts.length > 0 ? ` | Rank: ${rankParts.join(', ')}` : '';
+  const rankString = rankParts.length > 0 ? ` | Ranks: ${rankParts.join(', ')} ✨` : '';
   
-  return `${username}: ${rollCount} | ${current} | ${peak}${rankString}`;
+  return `${username}'s fortune: ${rollCount} | ${current} | ${peak}${rankString}`;
 }
 
 /**
@@ -299,17 +299,19 @@ export function formatLeaderboardResponse(type, entries) {
     return '🏆 No leaderboard data yet! Be the first to roll.';
   }
   
+  const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+  
   // Emoji and label by type
   const labels = {
-    iq: { emoji: '🧠', label: 'Highest IQ', suffix: '' },
-    height: { emoji: '📏', label: 'Tallest', suffix: '"' },
-    rolls: { emoji: '🎲', label: 'Most Rolls', suffix: '' }
+    iq: { emoji: '🧠', label: 'Top 5 IQ' },
+    height: { emoji: '📏', label: 'Top 5 Height' },
+    rolls: { emoji: '🎲', label: 'Top 5 Rolls' }
   };
   
-  const config = labels[type] || { emoji: '🏆', label: 'Top', suffix: '' };
+  const config = labels[type] || { emoji: '🏆', label: 'Top 5' };
   
-  // Format entries
-  const formattedEntries = entries.map(entry => {
+  // Format entries with medals
+  const formattedEntries = entries.map((entry, index) => {
     let scoreDisplay = entry.score;
     
     // Special formatting for height (convert inches to feet'inches")
@@ -319,8 +321,9 @@ export function formatLeaderboardResponse(type, entries) {
       scoreDisplay = `${feet}'${inches}"`;
     }
     
-    return `${entry.rank}) ${entry.username} (${scoreDisplay}${config.suffix})`;
-  }).join(' ');
+    const medal = medals[index] || '•';
+    return `${medal} ${entry.username} (${scoreDisplay})`;
+  }).join(' | ');
   
   return `${config.emoji} ${config.label}: ${formattedEntries}`;
 }
@@ -335,11 +338,14 @@ export function formatPepegaResponse(entries) {
     return '💩 No leaderboard data yet! Be the first to roll.';
   }
   
-  // Format entries with pepega score
-  const formattedEntries = entries.map(entry => {
-    const scoreDisplay = parseFloat(entry.score).toFixed(2);
-    return `${entry.rank}) ${entry.username} (${scoreDisplay})`;
-  }).join(' ');
+  const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
   
-  return `💩 Most Pepega: ${formattedEntries}`;
+  // Format entries with pepega score (ironic medals for worst luck)
+  const formattedEntries = entries.map((entry, index) => {
+    const scoreDisplay = parseFloat(entry.score).toFixed(2);
+    const medal = medals[index] || '•';
+    return `${medal} ${entry.username} (${scoreDisplay})`;
+  }).join(' | ');
+  
+  return `💩 Most Unlucky: ${formattedEntries}`;
 }

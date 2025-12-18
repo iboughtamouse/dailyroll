@@ -178,7 +178,7 @@ describe('formatStatsResponse', () => {
     const result = formatStatsResponse('TestUser', stats, ranks);
     
     expect(result).toContain('TestUser');
-    expect(result).toContain('1 roll'); // Singular
+    expect(result).toContain('1 attempt'); // Singular
     expect(result).toContain('142 IQ');
     expect(result).toContain('6\'3"');
     expect(result).toContain('Reinhardt');
@@ -200,9 +200,9 @@ describe('formatStatsResponse', () => {
     
     const result = formatStatsResponse('TestUser', stats, ranks);
     
-    expect(result).toContain('23 rolls'); // Plural
-    expect(result).toContain('Today: 100 IQ, 5\'6", Mercy');
-    expect(result).toContain('Peak: 198 IQ, 9\'2"');
+    expect(result).toContain('23 attempts'); // Plural
+    expect(result).toContain('Latest: 100 IQ, 5\'6", Mercy');
+    expect(result).toContain('Peak: 198 IQ');
   });
 
   test('handles missing ranks gracefully', () => {
@@ -219,7 +219,7 @@ describe('formatStatsResponse', () => {
     const result = formatStatsResponse('TestUser', stats, ranks);
     
     expect(result).toContain('TestUser');
-    expect(result).toContain('5 rolls');
+    expect(result).toContain('5 attempts');
     expect(result).not.toContain('Rank:');
   });
 
@@ -273,9 +273,9 @@ describe('formatStatsResponse', () => {
     // Username
     expect(result).toContain('TestUser');
     // Roll count
-    expect(result).toContain('42 rolls');
-    // Current roll (today's)
-    expect(result).toContain('Today:');
+    expect(result).toContain('42 attempts');
+    // Current roll (latest)
+    expect(result).toContain('Latest:');
     expect(result).toContain('156 IQ');
     expect(result).toContain('7\'2"');
     expect(result).toContain('Widowmaker');
@@ -284,7 +284,7 @@ describe('formatStatsResponse', () => {
     expect(result).toContain('189 IQ');
     expect(result).toContain('8\'5"');
     // Ranks
-    expect(result).toContain('Rank:');
+    expect(result).toContain('Ranks:');
     expect(result).toContain('#10 IQ');
     expect(result).toContain('#15 height');
     expect(result).toContain('#200 pepega');
@@ -301,10 +301,10 @@ describe('formatLeaderboardResponse', () => {
     
     const result = formatLeaderboardResponse('iq', entries);
     
-    expect(result).toContain('🧠 Highest IQ');
-    expect(result).toContain('1) BrainGod (198)');
-    expect(result).toContain('2) SmartGuy (187)');
-    expect(result).toContain('3) NotBad (156)');
+    expect(result).toContain('🧠 Top 5 IQ');
+    expect(result).toContain('🥇 BrainGod (198)');
+    expect(result).toContain('🥈 SmartGuy (187)');
+    expect(result).toContain('🥉 NotBad (156)');
   });
 
   test('formats height leaderboard correctly', () => {
@@ -316,10 +316,10 @@ describe('formatLeaderboardResponse', () => {
     
     const result = formatLeaderboardResponse('height', entries);
     
-    expect(result).toContain('📏 Tallest');
-    expect(result).toContain('1) TallBoi (9\'11"")');
-    expect(result).toContain('2) MediumBoi (6\'3"")');
-    expect(result).toContain('3) SmolBoi (4\'0"")');
+    expect(result).toContain('📏 Top 5 Height');
+    expect(result).toContain('🥇 TallBoi (9\'11")');
+    expect(result).toContain('🥈 MediumBoi (6\'3")');
+    expect(result).toContain('🥉 SmolBoi (4\'0")');
   });
 
   test('formats rolls leaderboard correctly', () => {
@@ -331,10 +331,10 @@ describe('formatLeaderboardResponse', () => {
     
     const result = formatLeaderboardResponse('rolls', entries);
     
-    expect(result).toContain('🎲 Most Rolls');
-    expect(result).toContain('1) Addict (500)');
-    expect(result).toContain('2) Regular (42)');
-    expect(result).toContain('3) Casual (7)');
+    expect(result).toContain('🎲 Top 5 Rolls');
+    expect(result).toContain('🥇 Addict (500)');
+    expect(result).toContain('🥈 Regular (42)');
+    expect(result).toContain('🥉 Casual (7)');
   });
 
   test('handles empty leaderboard', () => {
@@ -368,10 +368,10 @@ describe('formatPepegaResponse', () => {
     
     const result = formatPepegaResponse(entries);
     
-    expect(result).toContain('💩 Most Pepega');
-    expect(result).toContain('1) Unlucky1 (0.15)');
-    expect(result).toContain('2) Unlucky2 (0.22)');
-    expect(result).toContain('3) Unlucky3 (0.28)');
+    expect(result).toContain('💩 Most Unlucky');
+    expect(result).toContain('🥇 Unlucky1 (0.15)');
+    expect(result).toContain('🥈 Unlucky2 (0.22)');
+    expect(result).toContain('🥉 Unlucky3 (0.28)');
   });
 
   test('handles empty leaderboard', () => {
