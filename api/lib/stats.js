@@ -320,7 +320,7 @@ export function formatLeaderboardResponse(type, entries) {
  */
 export function formatPepegaResponse(entries) {
   if (!entries || entries.length === 0) {
-    return '💩 No pepega data yet! Roll to find out who has the worst luck.';
+    return '💩 No leaderboard data yet! Be the first to roll.';
   }
   
   // Format entries with pepega score

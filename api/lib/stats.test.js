@@ -377,7 +377,7 @@ describe('formatPepegaResponse', () => {
   test('handles empty leaderboard', () => {
     const result = formatPepegaResponse([]);
     
-    expect(result).toContain('No pepega data yet');
+    expect(result).toContain('No leaderboard data yet');
   });
 
   test('formats scores to 2 decimal places', () => {
