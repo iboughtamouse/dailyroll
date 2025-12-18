@@ -73,7 +73,7 @@ export default async function handler(req, res) {
     
     if (!stats || stats.totalRolls === 0) {
       console.log('❌ No stats found for user');
-      const response = `${username}: No rolls yet! Type !dailyroll to get started.`;
+      const response = `${username}: No rolls yet! Type !roll to get started.`;
       console.log('📤 RESPONSE:', response);
       res.status(200).send(response);
       return;

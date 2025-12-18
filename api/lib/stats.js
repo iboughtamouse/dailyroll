@@ -216,7 +216,7 @@ export async function getLeaderboardRanks(redis, userId) {
  */
 export function formatStatsResponse(username, stats, ranks) {
   if (!stats || stats.totalRolls === 0) {
-    return `${username}: No rolls yet! Type !dailyroll to get started.`;
+    return `${username}: No rolls yet! Type !roll to get started.`;
   }
   
   // Build response parts

@@ -155,13 +155,13 @@ describe('calculatePepegaScore', () => {
 describe('formatStatsResponse', () => {
   test('handles user with no rolls', () => {
     const result = formatStatsResponse('TestUser', null, {});
-    expect(result).toBe('TestUser: No rolls yet! Type !dailyroll to get started.');
+    expect(result).toBe('TestUser: No rolls yet! Type !roll to get started.');
   });
 
   test('handles user with zero rolls', () => {
     const stats = { totalRolls: 0 };
     const result = formatStatsResponse('TestUser', stats, {});
-    expect(result).toBe('TestUser: No rolls yet! Type !dailyroll to get started.');
+    expect(result).toBe('TestUser: No rolls yet! Type !roll to get started.');
   });
 
   test('formats single roll correctly', () => {

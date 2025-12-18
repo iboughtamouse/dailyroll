@@ -24,7 +24,7 @@ A serverless API for Twitch chat that generates random "daily roll" stats with s
 
 ## Example Output
 
-### Daily Roll (`!dailyroll`)
+### Daily Roll (`!roll`)
 
 ```
 TestUser rolled 45 IQ and 2'4" height - literal hamster brain. Play Wrecking Ball.
@@ -36,7 +36,7 @@ TestUser: 156 IQ, 7'2" tall - you've got a brain, use it. Play Widowmaker.
 
 ```
 august: 42 rolls | Today: 142 IQ, 6'3", Reinhardt | Peak: 189 IQ, 8'5" | Rank: #10 IQ, #15 height, #200 pepega
-newbie: No rolls yet! Type !dailyroll to get started.
+newbie: No rolls yet! Type !roll to get started.
 ```
 
 ### Leaderboards (`!t500`, `!b500`)
@@ -115,7 +115,7 @@ vercel
 2. Navigate to: Commands → Custom Commands → New Command
 
 **Daily Roll Command:**
-- **Command**: `!dailyroll`
+- **Command**: `!roll`
 - **Response**: `$(customapi https://your-project.vercel.app/api/dailyroll)`
 - **Cooldown**: None (API handles cooldowns)
 
@@ -200,9 +200,9 @@ Required environment variables in Vercel:
 
 ## How It Works
 
-### Daily Roll (`!dailyroll`)
+### Daily Roll (`!roll`)
 
-1. User types `!dailyroll` in Twitch chat
+1. User types `!roll` in Twitch chat
 2. Fossabot calls your API endpoint with validation token
 3. API validates request with Fossabot to get user and channel info
 4. If stream is live, API calls Twitch API to get actual stream start time (cached for 5 minutes)
