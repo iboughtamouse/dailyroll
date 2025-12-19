@@ -327,7 +327,9 @@ MIT
 
 ## Contributing
 
-Pull requests welcome! Feel free to add features, fix bugs, or improve documentation.
+No thank you! :) I don't want it. If you want to add shit to this, fork it, clone it, rename it and pretend its all yours and take the credit, I straight up do not care. I don't give a shit about a twitch command. I'm not maintaining this.
+
+But if you want it just clone it or fork it. Idk.
 
 ## Deployment Notes
 
