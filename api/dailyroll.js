@@ -135,14 +135,25 @@ export default async function handler(req, res) {
   if (userData && userData.lastRoll) {
     if (isLive && streamStartTime) {
       // LIVE: Check if they've exceeded max rolls for this stream
-      const currentStreamKey = await getStreamKey(redis, channelProviderId);
-      const lastStreamKey = userData.lastStreamKey || '';
-      const rollsThisStream = (currentStreamKey === lastStreamKey) ? (parseInt(userData.rollsThisStream || 0)) : 0;
-      
-      inCooldown = rollsThisStream >= MAX_ROLLS_PER_STREAM;
-      cooldownReason = inCooldown
-        ? `Already used ${rollsThisStream}/${MAX_ROLLS_PER_STREAM} rolls this stream`
-        : `Rolls this stream: ${rollsThisStream}/${MAX_ROLLS_PER_STREAM}`;
+      try {
+        const currentStreamKey = await getStreamKey(redis, channelProviderId);
+        const lastStreamKey = userData.lastStreamKey || '';
+        const rollsThisStream = (currentStreamKey === lastStreamKey) ? (parseInt(userData.rollsThisStream || 0)) : 0;
+        
+        inCooldown = rollsThisStream >= MAX_ROLLS_PER_STREAM;
+        cooldownReason = inCooldown
+          ? `Already used ${rollsThisStream}/${MAX_ROLLS_PER_STREAM} rolls this stream`
+          : `Rolls this stream: ${rollsThisStream}/${MAX_ROLLS_PER_STREAM}`;
+      } catch (error) {
+        console.error('❌ Error getting stream key for cooldown check:', error);
+        // Fall back to 24-hour cooldown if stream key fails
+        const OFFLINE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+        const timeSinceLastRoll = now - userData.lastRoll;
+        inCooldown = timeSinceLastRoll < OFFLINE_COOLDOWN_MS;
+        cooldownReason = inCooldown
+          ? `Stream key error - using 24-hour cooldown (${Math.round(timeSinceLastRoll / 1000 / 60)} minutes ago)`
+          : `Stream key error - 24-hour cooldown expired`;
+      }
     } else {
       // OFFLINE or couldn't get stream start time: Use 24-hour cooldown
       const OFFLINE_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
