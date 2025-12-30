@@ -40,20 +40,21 @@ export const INSULTS = [
   "greedy much? come back later",
   "did you think I wouldn't notice? 🤨",
   "one roll per day, genius",
-  "patience is a virtue you clearly lack",
   "imagine being this desperate for RNG",
   "the audacity",
   "no. just no.",
-  "someone didn't read the rules smh",
   "bro really thought 💀",
   "not you trying to cheat the system",
   "the greed is astronomical",
   "erm what the sigma? (you can't roll twice)",
   "chat is this real? 🤨📸",
   "least greedy twitch chatter",
-  "my brother in christ it hasn't been 14 hours",
+  "my brother in christ it hasn't been 24 hours",
   "you're done, you're done 🫵",
-  "reported to the cyber police"
+  "reported to the cyber police",
+  "you're one roll short of a timeout",
+  "the CHUNGUS would be disappointed",
+  "even the hamsters know better than this"
 ];
 
 /**
@@ -129,56 +130,70 @@ export function formatRollResponse(username, iq, height, heroData, isPersonalBes
   // Fortune-style templates (like sr2)
   const fortuneTemplates = [
     `🎲 ${username} rolled ${iq} IQ, ${height} - {flavor}. Play ${hero}.`,
-    `✨ The dice speak: ${username} got ${iq} IQ and ${height}. {flavor}. ${hero} awaits.`,
-    `🌟 ${username}: ${iq} IQ, ${height} tall - {flavor}. Time for ${hero}.`,
-    `🎴 Destiny reveals: ${iq} IQ, ${height} for ${username}. {flavor}. Play ${hero}.`,
-    `⭐ ${username} manifested ${iq} IQ and ${height} - {flavor}. ${hero} it is.`,
-    `🔮 The universe whispers: ${username} rolled ${iq} IQ, ${height}. {flavor}. ${hero} ready.`,
-    `💫 ${username}: IQ ${iq}, Height ${height} - {flavor}. ${hero} calls to you.`,
-    `🎯 RNG gods decree: ${username} gets ${iq} IQ and ${height}. {flavor}. Play ${hero}.`
+    `✨ The cosmic dice declare: ${username} gets ${iq} IQ and ${height}. {flavor}. ${hero} awaits.`,
+    `🌟 ${username}: ${iq} IQ, ${height} tall - {flavor}. Your destiny calls with ${hero}.`,
+    `🎴 The ancient scrolls reveal: ${username} manifests ${iq} IQ, ${height}. {flavor}. Play ${hero}.`,
+    `⭐ ${username} has been blessed with ${iq} IQ and ${height} - {flavor}. ${hero} is your calling.`,
+    `🔮 The mystical orbs show: ${username} rolled ${iq} IQ, ${height}. {flavor}. ${hero} beckons.`,
+    `💫 ${username}: IQ ${iq}, Height ${height} - {flavor}. The stars align for ${hero}.`,
+    `🎯 Fate's algorithm computes: ${username} receives ${iq} IQ and ${height}. {flavor}. Play ${hero}.`,
+    `🎪 ${username} steps into the spotlight: ${iq} IQ, ${height}. {flavor}. ${hero} is your role.`,
+    `🎭 The drama unfolds: ${username} with ${iq} IQ and ${height}. {flavor}. Starring as ${hero}.`,
+    `🎨 ${username}'s masterpiece: ${iq} IQ, ${height} tall - {flavor}. Signed by ${hero}.`,
+    `🎪 The carnival of chance: ${username} wins ${iq} IQ and ${height}. {flavor}. Prize: ${hero}.`
   ];
   
   // Tier-specific flavor text
   const flavorByTier = {
     1: [  // Hamster tier
-      'literal hamster brain',
-      'pure instinct mode',
-      'reject humanity',
-      hero === "Torbjörn" ? "you ARE the turret" : "basically a pet",
-      'all vibes no thoughts',
-      'consciousness optional'
+      'running on pure instinct and questionable decisions',
+      'the hamster wheel of destiny keeps spinning',
+      'consciousness is overrated anyway',
+      hero === "Torbjörn" ? "you ARE the turret, and that's beautiful" : "basically a very confused squirrel",
+      'vibes over validation',
+      'the universe said "surprise me" and got exactly that',
+      'plot armor made of cardboard',
+      'strategically chaotic'
     ],
     2: [  // Unga tier
-      'unga bunga energy',
-      'big weapon, simple plan',
-      'you see enemy, you hit enemy',
-      'thinks with their fists',
-      'pure aggression',
-      'monkey brain activated'
+      'peak caveman gaming energy',
+      'the bigger the hammer, the better the plan',
+      'diplomacy? never heard of her',
+      'thinks with fists, acts with fury',
+      'the art of the aggressive nap',
+      'monkey see, monkey smash',
+      'honor, justice, and questionable tactics',
+      'the CHUNGUS approach to problem-solving'
     ],
     3: [  // Normal tier
-      'perfectly average',
-      "you're fine",
-      'functioning human energy',
-      'unremarkable but reliable',
-      'nothing special',
-      'mediocrity achieved'
+      'perfectly adequate, suspiciously so',
+      'the sweet spot of mediocrity',
+      'functioning at acceptable levels',
+      'neither hero nor zero',
+      'the reliable middle child of gaming',
+      'competent but not concerning anyone',
+      'balanced like a diet that actually works',
+      'the Goldilocks zone of talent'
     ],
     4: [  // Bigbrain tier
-      'actually has a plan',
-      "you've got a brain, use it",
-      'high skill expression',
-      'thinks before shooting',
-      'galaxy brain time',
-      'tactical genius incoming'
+      'actually read the hero descriptions',
+      'tactical genius with a side of overthinking',
+      'the calculator in a world of rock-paper-scissors',
+      'strategy so deep it needs a lifeguard',
+      'thinks in three dimensions, plays in two',
+      'the chess master in checkers clothing',
+      'galaxy brain activated, local brain confused',
+      'the overachiever of the lobby'
     ],
     5: [  // Overqualified tier
-      'overqualified for this lobby',
-      'wasting your talent here',
-      'too good for this',
-      'absolute legend energy',
-      'devilish beast mode',
-      'smurf energy'
+      'wasting potential like it\'s going out of style',
+      'too skilled for this nonsense',
+      'the pro in a noob lobby',
+      'talent level: intimidating',
+      'could carry the team with one hand tied',
+      'the legend everyone whispers about',
+      'smurf energy with extra smug',
+      'absolute unit of competence'
     ]
   };
   
