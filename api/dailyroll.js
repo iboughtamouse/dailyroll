@@ -207,7 +207,7 @@ export default async function handler(req, res) {
   );
 
   // Update user stats and leaderboards
-  await updateUserStats(redis, userId, username, channelProviderId, {
+  const statsUpdateResult = await updateUserStats(redis, userId, username, channelProviderId, {
     iq,
     height,
     hero: heroData.hero,
@@ -215,8 +215,14 @@ export default async function handler(req, res) {
     timestamp: now
   });
 
-  // Note: updateUserStats now manages cooldown fields (lastRoll, spamCount)
-  // No need for separate cooldown storage
+  // Fail the request if stats update fails to prevent data inconsistency
+  if (!statsUpdateResult) {
+    console.error('❌ Failed to update stats - aborting roll');
+    res.status(500).send('Error processing roll. Please try again.');
+    return;
+  }
+
+  console.log('✅ Stats updated successfully');
 
   // Format and return response
   let response = `me ${formatRollResponse(username, iq, height, heroData)}`;
