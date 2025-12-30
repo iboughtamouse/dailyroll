@@ -301,10 +301,11 @@ describe('formatLeaderboardResponse', () => {
     
     const result = formatLeaderboardResponse('iq', entries);
     
-    expect(result).toContain('🧠 Top 5 IQ');
+    expect(result).toContain('🧠 Brainiac Brigade');
     expect(result).toContain('🥇 BrainGod (198)');
     expect(result).toContain('🥈 SmartGuy (187)');
     expect(result).toContain('🥉 NotBad (156)');
+    expect(result).toContain('The sharpest minds in the house');
   });
 
   test('formats height leaderboard correctly', () => {
@@ -316,10 +317,11 @@ describe('formatLeaderboardResponse', () => {
     
     const result = formatLeaderboardResponse('height', entries);
     
-    expect(result).toContain('📏 Top 5 Height');
+    expect(result).toContain('📏 Height Champions');
     expect(result).toContain('🥇 TallBoi (9\'11")');
     expect(result).toContain('🥈 MediumBoi (6\'3")');
     expect(result).toContain('🥉 SmolBoi (4\'0")');
+    expect(result).toContain('Standing tall above the rest');
   });
 
   test('formats rolls leaderboard correctly', () => {
@@ -331,10 +333,11 @@ describe('formatLeaderboardResponse', () => {
     
     const result = formatLeaderboardResponse('rolls', entries);
     
-    expect(result).toContain('🎲 Top 5 Rolls');
+    expect(result).toContain('🎲 Roll Veterans');
     expect(result).toContain('🥇 Addict (500)');
     expect(result).toContain('🥈 Regular (42)');
     expect(result).toContain('🥉 Casual (7)');
+    expect(result).toContain('The true gambling addicts');
   });
 
   test('handles empty leaderboard', () => {
@@ -368,10 +371,11 @@ describe('formatPepegaResponse', () => {
     
     const result = formatPepegaResponse(entries);
     
-    expect(result).toContain('💩 Lowest IQ');
+    expect(result).toContain('� Pepega Hall of Shame');
     expect(result).toContain('🥇 Unlucky1 (15)');
     expect(result).toContain('🥈 Unlucky2 (22)');
     expect(result).toContain('🥉 Unlucky3 (28)');
+    expect(result).toContain('When RNG says "no"');
   });
 
   test('handles empty leaderboard', () => {

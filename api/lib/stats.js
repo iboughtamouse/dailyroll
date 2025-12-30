@@ -272,7 +272,23 @@ export function formatStatsResponse(username, stats, ranks) {
   if (ranks.pepegaRank) rankParts.push(`#${ranks.pepegaRank} pepega`);
   const rankString = rankParts.length > 0 ? ` | Ranks: ${rankParts.join(', ')} ✨` : '';
   
-  return `${username}'s fortune: ${rollCount} | ${current} | ${peak}${rankString}`;
+  // Add some snarky commentary based on performance
+  let commentary = '';
+  const avgIQ = stats.totalRolls > 0 ? stats.sumIQ / stats.totalRolls : 0;
+  
+  if (stats.totalRolls >= 10) {
+    if (avgIQ >= 150) {
+      commentary = ' | The brain trust approves 👑';
+    } else if (avgIQ <= 50) {
+      commentary = ' | Living their best chaotic life 🌪️';
+    } else if (ranks.pepegaRank && ranks.pepegaRank <= 10) {
+      commentary = ' | Certified pepega energy 🐸';
+    } else if (stats.totalRolls >= 50) {
+      commentary = ' | The dedication is real 💪';
+    }
+  }
+  
+  return `${username}'s fortune: ${rollCount} | ${current} | ${peak}${rankString}${commentary}`;
 }
 
 /**
@@ -336,14 +352,14 @@ export function formatLeaderboardResponse(type, entries) {
   
   const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
   
-  // Emoji and label by type
+  // Emoji and label by type with more personality
   const labels = {
-    iq: { emoji: '🧠', label: 'Top 5 IQ' },
-    height: { emoji: '📏', label: 'Top 5 Height' },
-    rolls: { emoji: '🎲', label: 'Top 5 Rolls' }
+    iq: { emoji: '🧠', label: 'Brainiac Brigade', subtitle: 'The sharpest minds in the house' },
+    height: { emoji: '📏', label: 'Height Champions', subtitle: 'Standing tall above the rest' },
+    rolls: { emoji: '🎲', label: 'Roll Veterans', subtitle: 'The true gambling addicts' }
   };
   
-  const config = labels[type] || { emoji: '🏆', label: 'Top 5' };
+  const config = labels[type] || { emoji: '🏆', label: 'Top 5', subtitle: 'The elite few' };
   
   // Format entries with medals
   const formattedEntries = entries.map((entry, index) => {
@@ -360,7 +376,7 @@ export function formatLeaderboardResponse(type, entries) {
     return `${medal} ${entry.username} (${scoreDisplay})`;
   }).join(' | ');
   
-  return `${config.emoji} ${config.label}: ${formattedEntries}`;
+  return `${config.emoji} ${config.label}: ${formattedEntries} | ${config.subtitle} 🏅`;
 }
 
 /**
@@ -382,5 +398,5 @@ export function formatPepegaResponse(entries) {
     return `${medal} ${entry.username} (${iqScore})`;
   }).join(' | ');
   
-  return `💩 Lowest IQ This Stream: ${formattedEntries}`;
+  return `� Pepega Hall of Shame: ${formattedEntries} | When RNG says "no" 💀`;
 }
