@@ -45,7 +45,7 @@ export default async function handler(req, res) {
   }
 
   if (!isAugust) {
-    res.status(400).send("Get out of my fucking API you shitter");
+    res.status(403).send("Get out of my fucking API you shitter");
     return;
   }
 

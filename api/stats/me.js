@@ -39,6 +39,16 @@ export default async function handler(req, res) {
     
     const context = validation.data;
     
+    // Channel gating
+    const channelName = context.channel?.display_name?.toUpperCase();
+    const expectedChannel = process.env.STREAMER_NAME?.toUpperCase();
+    
+    if (channelName !== expectedChannel) {
+      console.log(`❌ Channel mismatch: ${channelName} !== ${expectedChannel}`);
+      res.status(403).send('This command is not available in this channel');
+      return;
+    }
+    
     // Extract user info
     const username = context.message?.user?.display_name || context.message?.user?.login || 'Unknown';
     const userId = context.message?.user?.provider_id;
