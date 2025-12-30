@@ -151,54 +151,46 @@ export function formatRollResponse(username, iq, height, heroData, isPersonalBes
   // Tier-specific flavor text
   const flavorByTier = {
     1: [  // Hamster tier
-      'running on pure instinct and questionable decisions',
-      'the hamster wheel of destiny keeps spinning',
-      'consciousness is overrated anyway',
-      hero === "Torbjörn" ? "you ARE the turret, and that's beautiful" : "basically a very confused squirrel",
-      'vibes over validation',
-      'the universe said "surprise me" and got exactly that',
-      'plot armor made of cardboard',
-      'strategically chaotic'
+      'literal hamster brain',
+      'pure instinct mode',
+      'reject humanity',
+      hero === "Torbjörn" ? "you ARE the turret" : "basically a pet",
+      'all vibes no thoughts',
+      'consciousness is overrated anyway'
     ],
     2: [  // Unga tier
-      'peak caveman gaming energy',
-      'the bigger the hammer, the better the plan',
-      'diplomacy? never heard of her',
-      'thinks with fists, acts with fury',
-      'the art of the aggressive nap',
-      'monkey see, monkey smash',
-      'honor, justice, and questionable tactics',
+      'unga bunga energy',
+      'big weapon, simple plan',
+      'you see enemy, you hit enemy',
+      'thinks with their fists',
+      'pure aggression',
+      'monkey brain activated',
       'the CHUNGUS approach to problem-solving'
     ],
     3: [  // Normal tier
-      'perfectly adequate, suspiciously so',
-      'the sweet spot of mediocrity',
-      'functioning at acceptable levels',
-      'neither hero nor zero',
-      'the reliable middle child of gaming',
-      'competent but not concerning anyone',
-      'balanced like a diet that actually works',
-      'the Goldilocks zone of talent'
+      'perfectly average',
+      "you're fine",
+      'functioning human energy',
+      'unremarkable but reliable',
+      'nothing special',
+      'mediocrity achieved'
     ],
     4: [  // Bigbrain tier
-      'actually read the hero descriptions',
-      'tactical genius with a side of overthinking',
-      'the calculator in a world of rock-paper-scissors',
-      'strategy so deep it needs a lifeguard',
-      'thinks in three dimensions, plays in two',
-      'the chess master in checkers clothing',
-      'galaxy brain activated, local brain confused',
-      'the overachiever of the lobby'
+      'actually has a plan',
+      "you've got a brain, use it",
+      'high skill expression',
+      'thinks before shooting',
+      'galaxy brain time',
+      'tactical genius incoming'
     ],
     5: [  // Overqualified tier
-      'wasting potential like it\'s going out of style',
-      'too skilled for this nonsense',
-      'the pro in a noob lobby',
-      'talent level: intimidating',
-      'could carry the team with one hand tied',
-      'the legend everyone whispers about',
-      'smurf energy with extra smug',
-      'absolute unit of competence'
+      'overqualified for this lobby',
+      'wasting your talent here',
+      'too good for this',
+      'absolute legend energy',
+      'devilish beast mode',
+      'smurf energy',
+      'the pro in a noob lobby'
     ]
   };
   
