@@ -108,7 +108,7 @@ export async function updateUserStats(redis, userId, username, providerId, rollD
       // All-time bests
       highestIQ,
       highestIQTimestamp: highestIQ === iq ? timestamp : (existingStats.highestIQTimestamp || timestamp),
-      tallestHeight: highestIQ === tallestHeightInches ? height : (existingStats.tallestHeight || height),
+      tallestHeight: tallestHeightInches === heightInches ? height : (existingStats.tallestHeight || height),
       tallestHeightInches,
       tallestHeightTimestamp: tallestHeightInches === heightInches ? timestamp : (existingStats.tallestHeightTimestamp || timestamp),
       
