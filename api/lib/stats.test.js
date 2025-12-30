@@ -173,7 +173,7 @@ describe('formatStatsResponse', () => {
       highestIQ: 142,
       tallestHeight: '6\'3"'
     };
-    const ranks = { iqRank: 5, heightRank: 12, pepegaRank: 47 };
+    const ranks = { iqRank: 5, heightRank: 12, iqLowRank: 47 };
     
     const result = formatStatsResponse('TestUser', stats, ranks);
     
@@ -196,7 +196,7 @@ describe('formatStatsResponse', () => {
       highestIQ: 198,
       tallestHeight: '9\'2"'
     };
-    const ranks = { iqRank: 3, heightRank: 7, pepegaRank: 150 };
+    const ranks = { iqRank: 3, heightRank: 7, iqLowRank: 150 };
     
     const result = formatStatsResponse('TestUser', stats, ranks);
     
@@ -214,7 +214,7 @@ describe('formatStatsResponse', () => {
       highestIQ: 87,
       tallestHeight: '5\'2"'
     };
-    const ranks = { iqRank: null, heightRank: null, pepegaRank: null };
+    const ranks = { iqRank: null, heightRank: null, iqLowRank: null };
     
     const result = formatStatsResponse('TestUser', stats, ranks);
     
@@ -232,7 +232,7 @@ describe('formatStatsResponse', () => {
       highestIQ: 150,
       tallestHeight: '7\'1"'
     };
-    const ranks = { iqRank: 25, heightRank: null, pepegaRank: 100 };
+    const ranks = { iqRank: 25, heightRank: null, iqLowRank: 100 };
     
     const result = formatStatsResponse('TestUser', stats, ranks);
     
@@ -250,7 +250,7 @@ describe('formatStatsResponse', () => {
       highestIQ: 200,
       tallestHeight: '9\'11"'
     };
-    const ranks = { iqRank: 999, heightRank: 999, pepegaRank: 999 };
+    const ranks = { iqRank: 999, heightRank: 999, iqLowRank: 999 };
     
     const result = formatStatsResponse('VeryLongUsername1234567890', stats, ranks);
     
@@ -266,7 +266,7 @@ describe('formatStatsResponse', () => {
       highestIQ: 189,
       tallestHeight: '8\'5"'
     };
-    const ranks = { iqRank: 10, heightRank: 15, pepegaRank: 200 };
+    const ranks = { iqRank: 10, heightRank: 15, iqLowRank: 200 };
     
     const result = formatStatsResponse('TestUser', stats, ranks);
     
@@ -283,8 +283,8 @@ describe('formatStatsResponse', () => {
     expect(result).toContain('Peak:');
     expect(result).toContain('189 IQ');
     expect(result).toContain('8\'5"');
-    // Ranks
-    expect(result).toContain('Ranks:');
+    // Stream-specific ranks
+    expect(result).toContain('This Stream:');
     expect(result).toContain('#10 IQ');
     expect(result).toContain('#15 height');
     expect(result).toContain('#200 pepega');

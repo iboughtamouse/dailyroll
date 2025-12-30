@@ -221,29 +221,30 @@ export async function getUserStats(redis, userId) {
 }
 
 /**
- * Get user's ranks across all leaderboards
+ * Get user's ranks in stream-specific leaderboards
  * @param {Redis} redis - Upstash Redis client
  * @param {string} userId - User's provider ID
- * @returns {Object} { iqRank, heightRank, rollsRank, pepegaRank }
+ * @param {string} providerId - Streamer's provider ID for stream key
+ * @returns {Object} { iqRank, heightRank, iqLowRank }
  */
-export async function getLeaderboardRanks(redis, userId) {
+export async function getLeaderboardRanks(redis, userId, providerId) {
   try {
-    const [iqRank, heightRank, rollsRank, pepegaRank] = await Promise.all([
-      redis.zrevrank('dailyroll:leaderboard:iq', userId),
-      redis.zrevrank('dailyroll:leaderboard:height', userId),
-      redis.zrevrank('dailyroll:leaderboard:rolls', userId),
-      redis.zrank('dailyroll:leaderboard:pepega', userId) // Note: regular rank for pepega (lower score = worse)
+    const streamKey = await getStreamKey(redis, providerId);
+    
+    const [iqRank, heightRank, iqLowRank] = await Promise.all([
+      redis.zrevrank(`dailyroll:leaderboard:${streamKey}:iq`, userId),
+      redis.zrevrank(`dailyroll:leaderboard:${streamKey}:height`, userId),
+      redis.zrank(`dailyroll:leaderboard:${streamKey}:iq_low`, userId) // Note: regular rank for pepega (lower IQ = worse)
     ]);
     
     return {
       iqRank: iqRank !== null ? iqRank + 1 : null, // Convert 0-indexed to 1-indexed
       heightRank: heightRank !== null ? heightRank + 1 : null,
-      rollsRank: rollsRank !== null ? rollsRank + 1 : null,
-      pepegaRank: pepegaRank !== null ? pepegaRank + 1 : null
+      iqLowRank: iqLowRank !== null ? iqLowRank + 1 : null
     };
   } catch (error) {
     console.error('❌ Error getting leaderboard ranks:', error);
-    return { iqRank: null, heightRank: null, rollsRank: null, pepegaRank: null };
+    return { iqRank: null, heightRank: null, iqLowRank: null };
   }
 }
 
@@ -265,12 +266,12 @@ export function formatStatsResponse(username, stats, ranks) {
   const current = `Latest: ${stats.currentIQ} IQ, ${stats.currentHeight}, ${stats.currentHero}`;
   const peak = `Peak: ${stats.highestIQ} IQ 🧠, ${stats.tallestHeight} 📏`;
   
-  // Build ranks string (only show ranks that exist)
+  // Build ranks string (only show ranks that exist for this stream)
   const rankParts = [];
   if (ranks.iqRank) rankParts.push(`#${ranks.iqRank} IQ`);
   if (ranks.heightRank) rankParts.push(`#${ranks.heightRank} height`);
-  if (ranks.pepegaRank) rankParts.push(`#${ranks.pepegaRank} pepega`);
-  const rankString = rankParts.length > 0 ? ` | Ranks: ${rankParts.join(', ')} ✨` : '';
+  if (ranks.iqLowRank) rankParts.push(`#${ranks.iqLowRank} pepega`);
+  const rankString = rankParts.length > 0 ? ` | This Stream: ${rankParts.join(', ')} 🌟` : '';
   
   // Add some snarky commentary based on performance
   let commentary = '';
@@ -281,7 +282,7 @@ export function formatStatsResponse(username, stats, ranks) {
       commentary = ' | The brain trust approves 👑';
     } else if (avgIQ <= 50) {
       commentary = ' | Living their best chaotic life 🌪️';
-    } else if (ranks.pepegaRank && ranks.pepegaRank <= 10) {
+    } else if (ranks.iqLowRank && ranks.iqLowRank <= 10) {
       commentary = ' | Certified pepega energy 🐸';
     } else if (stats.totalRolls >= 50) {
       commentary = ' | The dedication is real 💪';

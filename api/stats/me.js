@@ -52,9 +52,15 @@ export default async function handler(req, res) {
     // Extract user info
     const username = context.message?.user?.display_name || context.message?.user?.login || 'Unknown';
     const userId = context.message?.user?.provider_id;
+    const channelProviderId = context.channel?.provider_id;
     
     if (!userId) {
       res.status(400).send('Could not identify user');
+      return;
+    }
+    
+    if (!channelProviderId) {
+      res.status(400).send('Could not identify channel');
       return;
     }
     
@@ -76,8 +82,8 @@ export default async function handler(req, res) {
       return;
     }
     
-    // Get leaderboard ranks
-    const ranks = await getLeaderboardRanks(redis, userId);
+    // Get leaderboard ranks (stream-specific)
+    const ranks = await getLeaderboardRanks(redis, userId, channelProviderId);
     
     console.log('✅ Stats found:', {
       totalRolls: stats.totalRolls,
