@@ -3,20 +3,7 @@
 
 import { Redis } from '@upstash/redis';
 import { getTopN, formatPepegaResponse } from '../lib/stats.js';
-
-/**
- * Validate the Fossabot request and get context
- */
-async function validateAndGetContext(token) {
-  const response = await fetch(`https://api.fossabot.com/v2/customapi/context/${token}`);
-  
-  if (!response.ok) {
-    return { valid: false, error: 'Invalid or expired token' };
-  }
-  
-  const data = await response.json();
-  return { valid: true, data };
-}
+import { validateAndGetContext } from '../lib/fossabot.js';
 
 /**
  * Main handler
