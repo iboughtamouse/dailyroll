@@ -3,20 +3,7 @@
 
 import { Redis } from '@upstash/redis';
 import { getUserStats, getLeaderboardRanks, formatStatsResponse } from '../lib/stats.js';
-
-/**
- * Validate the Fossabot request and get context
- */
-async function validateAndGetContext(token) {
-  const response = await fetch(`https://api.fossabot.com/v2/customapi/context/${token}`);
-  
-  if (!response.ok) {
-    return { valid: false, error: 'Invalid or expired token' };
-  }
-  
-  const data = await response.json();
-  return { valid: true, data };
-}
+import { validateAndGetContext } from '../lib/fossabot.js';
 
 /**
  * Main handler
@@ -52,12 +39,28 @@ export default async function handler(req, res) {
     
     const context = validation.data;
     
+    // Channel gating
+    const channelName = context.channel?.display_name?.toUpperCase();
+    const expectedChannel = process.env.STREAMER_NAME?.toUpperCase();
+    
+    if (channelName !== expectedChannel) {
+      console.log(`❌ Channel mismatch: ${channelName} !== ${expectedChannel}`);
+      res.status(403).send('This command is not available in this channel');
+      return;
+    }
+    
     // Extract user info
     const username = context.message?.user?.display_name || context.message?.user?.login || 'Unknown';
     const userId = context.message?.user?.provider_id;
+    const channelProviderId = context.channel?.provider_id;
     
     if (!userId) {
       res.status(400).send('Could not identify user');
+      return;
+    }
+    
+    if (!channelProviderId) {
+      res.status(400).send('Could not identify channel');
       return;
     }
     
@@ -79,8 +82,8 @@ export default async function handler(req, res) {
       return;
     }
     
-    // Get leaderboard ranks
-    const ranks = await getLeaderboardRanks(redis, userId);
+    // Get leaderboard ranks (stream-specific)
+    const ranks = await getLeaderboardRanks(redis, userId, channelProviderId);
     
     console.log('✅ Stats found:', {
       totalRolls: stats.totalRolls,
