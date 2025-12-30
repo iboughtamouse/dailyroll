@@ -10,7 +10,7 @@ import {
   getRandomInsult,
   formatRollResponse,
 } from "./lib/game.js";
-import { updateUserStats } from "./lib/stats.js";
+import { updateUserStats, getStreamKey } from "./lib/stats.js";
 
 // Redis expiration for user data
 const REDIS_EXPIRATION = 48 * 60 * 60; // 48 hours in seconds
@@ -153,7 +153,7 @@ export default async function handler(req, res) {
   if (userData && userData.lastRoll) {
     if (isLive && streamStartTime) {
       // LIVE: Check if they've exceeded max rolls for this stream
-      const currentStreamKey = `stream_${new Date(streamStartTime).toISOString()}`;
+      const currentStreamKey = await getStreamKey(redis, channelProviderId);
       const lastStreamKey = userData.lastStreamKey || '';
       const rollsThisStream = (currentStreamKey === lastStreamKey) ? (parseInt(userData.rollsThisStream || 0)) : 0;
       
