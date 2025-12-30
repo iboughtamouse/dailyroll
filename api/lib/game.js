@@ -54,7 +54,12 @@ export const INSULTS = [
   "reported to the cyber police",
   "you're one roll short of a timeout",
   "the CHUNGUS would be disappointed",
-  "even the hamsters know better than this"
+  "even the hamsters know better than this",
+  "the bot is judging you so hard right now",
+  "60 second vacation incoming if you try again",
+  "asking for a second roll is crazy work",
+  "you must be new here (you're not)",
+  "y'no what. i dont like you. yeah. ive decided i dont like you."
 ];
 
 /**
