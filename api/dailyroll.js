@@ -12,9 +12,6 @@ import {
 } from "./lib/game.js";
 import { updateUserStats, getStreamKey } from "./lib/stats.js";
 
-// Redis expiration for user data
-const REDIS_EXPIRATION = 48 * 60 * 60; // 48 hours in seconds
-
 // Max rolls per stream (configurable for testing)
 const MAX_ROLLS_PER_STREAM = parseInt(process.env.MAX_ROLLS_PER_STREAM || '1', 10);
 
